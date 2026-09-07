@@ -87,7 +87,7 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
           </span>
-          <span id="webmcp-status-badge">WebMCP: 10 Tools</span>
+          <span id="webmcp-status-badge">WebMCP: 12 Tools</span>
         </button>
 
         <!-- KDD Methodology Link -->
@@ -365,10 +365,44 @@
     </div>
   </div>
 
+  <!-- 9. Run Workflow Modal -->
+  <div id="run-workflow-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-purple-400" viewBox="0 0 16 16" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zm5.22-3.28a.75.75 0 00-1.06 1.06L7.94 8l-2.28 2.22a.75.75 0 101.06 1.06l2.81-2.75a.75.75 0 000-1.06L6.72 4.72z"></path>
+          </svg>
+          <h3 class="font-bold text-white text-sm">Run Workflow (workflow_dispatch)</h3>
+        </div>
+        <button onclick="app.closeRunWorkflowModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="font-semibold text-gray-300 block mb-1">Select Workflow:</label>
+          <select id="dispatch-workflow-select" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-2.5 py-1.5 text-gray-200 text-xs focus:border-blue-500 outline-none"></select>
+        </div>
+        <div>
+          <label class="font-semibold text-gray-300 block mb-1">Use workflow from branch:</label>
+          <select id="dispatch-branch-select" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-2.5 py-1.5 text-gray-200 text-xs focus:border-blue-500 outline-none"></select>
+        </div>
+        <p class="text-[11px] text-gray-400">This client-side workflow will execute deterministic verification steps (OKF linting, CCDD contract audit, complexity budget check, perimeter audit, and frozen test oracles) inside your browser runtime.</p>
+        <div class="pt-3 border-t border-[#30363d] flex justify-end gap-2">
+          <button onclick="app.closeRunWorkflowModal()" class="px-3 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded font-semibold">Cancel</button>
+          <button onclick="app.dispatchWorkflow()" class="px-3.5 py-1.5 bg-[#238636] hover:bg-[#2ea043] text-white rounded font-bold flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm-1.5 4.5a.5.5 0 01.764-.424l5 3.5a.5.5 0 010 .848l-5 3.5A.5.5 0 016.5 11.5v-7z"></path></svg>
+            Run workflow
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= SCRIPTS ================= -->
   <script src="js/store.js"></script>
   <script src="js/git-engine.js"></script>
   <script src="js/kdd-engine.js"></script>
+  <script src="js/actions-engine.js"></script>
   <script src="js/webmcp-provider.js"></script>
   <script src="js/htmx-bridge.js"></script>
   <script src="js/app.js"></script>

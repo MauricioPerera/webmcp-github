@@ -47,6 +47,12 @@
     {
       "repoId": "repo-1",
       "branch": "main",
+      "path": ".github/workflows/validate.yml",
+      "content": "name: validate-contracts\n\non:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]\n  workflow_dispatch:\n\njobs:\n  kdd-gate:\n    name: KDD Deterministic Gate\n    runs-on: client-side-runner\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Validate OKF Structure & Nodes\n        run: kdd validate_okf --dir knowledge\n\n      - name: Audit CCDD Task Contracts\n        run: kdd validate_contracts --dir knowledge/contracts\n\n      - name: Cyclomatic Complexity & Budget Check\n        run: kdd check_budget --strict\n\n      - name: Dependency Perimeter Audit\n        run: kdd audit_deps --allow-declared\n\n      - name: Execute Frozen Test Oracles\n        run: python -m unittest discover tests/\n\n      - name: Generate Sealed Evidence Report\n        run: kdd generate_report --out .agents/logs/\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
       "path": "README.md",
       "content": "# KDD (Knowledge-Driven Development)\n\n[![validate-contracts](https://github.com/MauricioPerera/KDD/actions/workflows/validate.yml/badge.svg)](https://github.com/MauricioPerera/KDD/actions/workflows/validate.yml)\n\nKnowledge-Driven Development (KDD) unifies:\n- **OKF (Open Knowledge Format):** Minimalist format for structuring knowledge, design, and architecture as markdown files with YAML frontmatter.\n- **CCDD (Contract-Driven Development):** Governs development with ephemeral AI agents through strict contracts, frozen tests, and deterministic complexity thresholds.\n\n### Repository Structure\n- `knowledge/`: Where your OKF knowledge base lives. Every file is an indexable node.\n- `knowledge/contracts/`: Where tasks for developers (human or AI) are defined using hybrid OKF+CCDD.\n- `src/` and `tests/`: Implementation code and frozen test oracles.\n- `scripts/validate_contracts.py`: Deterministic contract validator.\n\n### WebMCP Integration\nThis repository is connected to **FastWebMCP** and **KDD-Board**, exposing tools directly to AI browser agents according to the WebMCP standard (`webmcp.com`).\n"
     },
@@ -79,6 +85,18 @@
       "branch": "main",
       "path": "tests/test_verify_user.py",
       "content": "import unittest\nfrom src.verify_user import verify_user\n\nclass TestVerifyUser(unittest.TestCase):\n    def test_valid_user(self):\n        self.assertTrue(verify_user(\"mauricio_123\"))\n        self.assertTrue(verify_user(\"user-valid\"))\n\n    def test_invalid_length(self):\n        self.assertFalse(verify_user(\"usr\"))\n        self.assertFalse(verify_user(\"a\" * 33))\n\n    def test_invalid_characters(self):\n        self.assertFalse(verify_user(\"user@domain\"))\n        self.assertFalse(verify_user(\"user name\"))\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "src/observability.py",
+      "content": "import json\n\ndef check_telemetry(action_name: str, payload: dict) -> bool:\n    \"\"\"Verifica que la acción y el payload de telemetría sean válidos.\"\"\"\n    if not action_name or not isinstance(payload, dict):\n        return False\n    return True\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "tests/test_observability.py",
+      "content": "import unittest\nfrom src.observability import check_telemetry\n\nclass TestObservability(unittest.TestCase):\n    def test_valid_telemetry(self):\n        self.assertTrue(check_telemetry(\"user_action\", {\"status\": \"ok\"}))\n\n    def test_invalid_telemetry(self):\n        self.assertFalse(check_telemetry(\"\", {}))\n\nif __name__ == '__main__':\n    unittest.main()\n"
     },
     {
       "repoId": "repo-1",
@@ -257,6 +275,33 @@
       "gateStatus": "passed",
       "complexity": 1,
       "maxComplexity": 2
+    }
+  ],
+  "workflowRuns": [
+    {
+      "id": "run-1",
+      "repoId": "repo-1",
+      "workflowName": "validate-contracts",
+      "workflowPath": ".github/workflows/validate.yml",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "push",
+      "branch": "main",
+      "commitId": "b8e42d1",
+      "commitMessage": "chore: add frozen test for verify_user contract",
+      "author": "Mauricio Perera",
+      "duration": "1.4s",
+      "createdAt": "2026-09-06T09:10:05Z",
+      "steps": [
+        { "name": "Checkout repository", "status": "completed", "conclusion": "success", "duration": "0.1s" },
+        { "name": "Validate OKF Structure & Nodes", "status": "completed", "conclusion": "success", "duration": "0.2s" },
+        { "name": "Audit CCDD Task Contracts", "status": "completed", "conclusion": "success", "duration": "0.4s" },
+        { "name": "Cyclomatic Complexity & Budget Check", "status": "completed", "conclusion": "success", "duration": "0.2s" },
+        { "name": "Dependency Perimeter Audit", "status": "completed", "conclusion": "success", "duration": "0.1s" },
+        { "name": "Execute Frozen Test Oracles", "status": "completed", "conclusion": "success", "duration": "0.3s" },
+        { "name": "Generate Sealed Evidence Report", "status": "completed", "conclusion": "success", "duration": "0.1s" }
+      ],
+      "logs": "[INFO] Initializing KDD Actions Client-Side Runner v1.0\n[INFO] Job: KDD Deterministic Gate\n[INFO] Step 1/7: Checkout repository\n[INFO] Loaded 7 files from repository branch 'main'\n[INFO] Step 2/7: Validate OKF Structure & Nodes\n[PASS] Node 'knowledge/OKF-SPEC.md' conforms to OKF specification\n[INFO] Step 3/7: Audit CCDD Task Contracts\n[PASS] Contract 'knowledge/contracts/implementar_verify_user.md': PASSED\n[INFO] Step 4/7: Cyclomatic Complexity & Budget Check\n[PASS] Calculated complexity 3 <= budget 4\n[INFO] Step 5/7: Dependency Perimeter Audit\n[PASS] All imports within deps_allowed: [re, hashlib]\n[INFO] Step 6/7: Execute Frozen Test Oracles\n[PASS] Running tests/test_verify_user.py ... 3/3 tests PASSED\n[INFO] Step 7/7: Generate Sealed Evidence Report\n[PASS] Evidence report generated at .agents/logs/verify_user-REPORT.md\n[SUCCESS] Workflow validate-contracts completed in 1.4s with verdict PASSED"
     }
   ]
 }

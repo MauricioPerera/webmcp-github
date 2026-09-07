@@ -60,17 +60,20 @@ async function runSuite() {
   const storeCode = fs.readFileSync(path.join(__dirname, '../js/store.js'), 'utf8');
   const gitCode = fs.readFileSync(path.join(__dirname, '../js/git-engine.js'), 'utf8');
   const kddCode = fs.readFileSync(path.join(__dirname, '../js/kdd-engine.js'), 'utf8');
+  const actionsCode = fs.readFileSync(path.join(__dirname, '../js/actions-engine.js'), 'utf8');
   const mcpCode = fs.readFileSync(path.join(__dirname, '../js/webmcp-provider.js'), 'utf8');
   const appCode = fs.readFileSync(path.join(__dirname, '../js/app.js'), 'utf8');
 
   eval(storeCode);
   eval(gitCode);
   eval(kddCode);
+  eval(actionsCode);
   eval(mcpCode);
 
   const store = window.ghStore;
   const git = window.gitEngine;
   const kdd = window.kddEngine;
+  const actions = window.actionsEngine;
   const webmcp = window.webMcpProvider;
 
   // Pre-seed storage using fallback localStorage mode for pure node execution
@@ -318,16 +321,19 @@ def test():
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/bad_no_fm.md', '# Solo Markdown sin frontmatter');
   const auditNoFm = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/bad_no_fm.md');
   assert(auditNoFm.verdict === 'FAILED' && auditNoFm.checks.some(c => c.name === 'OKF Frontmatter' && c.status === 'FAIL'), 'validateContract() falla si falta frontmatter (Forzado)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/bad_no_fm.md');
 
   // Test 3.8: Forzado de Error 3 - Tipo de nodo incorrecto
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/bad_type.md', '---\ntype: \'Standard\'\ntask: t\n---\nBody');
   const auditBadType = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/bad_type.md');
   assert(auditBadType.verdict === 'FAILED' && auditBadType.checks.some(c => c.name === 'Node Type' && c.status === 'FAIL'), 'validateContract() falla si type != "Task Contract" (Forzado)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/bad_type.md');
 
   // Test 3.9: Forzado de Error 4 - Campos requeridos faltantes
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/bad_missing_fields.md', '---\ntype: \'Task Contract\'\ntask: demo\n---\nBody');
   const auditMissingFields = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/bad_missing_fields.md');
   assert(auditMissingFields.verdict === 'FAILED' && auditMissingFields.checks.some(c => c.name === 'Required CCDD Fields' && c.status === 'FAIL'), 'validateContract() falla ante campos CCDD faltantes (Forzado)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/bad_missing_fields.md');
 
   // Test 3.10: Forzado de Error 5 - Archivo target de implementación inexistente
   const badTargetContract = `---
@@ -346,6 +352,7 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/bad_target.md', badTargetContract);
   const auditBadTarget = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/bad_target.md');
   assert(auditBadTarget.verdict === 'FAILED' && auditBadTarget.checks.some(c => c.name === 'Target Implementation' && c.status === 'FAIL'), 'validateContract() falla si target no existe (Forzado)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/bad_target.md');
 
   // Test 3.11: Forzado de Error 6 - Oráculo de prueba congelado inexistente
   const badTestContract = `---
@@ -364,6 +371,7 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/bad_tests.md', badTestContract);
   const auditBadTests = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/bad_tests.md');
   assert(auditBadTests.verdict === 'FAILED' && auditBadTests.checks.some(c => c.name === 'Frozen Test Oracle' && c.status === 'FAIL'), 'validateContract() falla si test oracle no existe (Forzado)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/bad_tests.md');
 
   // Test 3.12: Forzado de Error 7 - Violación de Presupuesto de Complejidad
   await store.saveFile(kddRepo.id, 'main', 'src/over_complex.py', complexCode);
@@ -384,6 +392,9 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/over_budget.md', overBudgetContract);
   const auditOverBudget = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/over_budget.md');
   assert(auditOverBudget.verdict === 'FAILED' && auditOverBudget.checks.some(c => c.name === 'Cyclomatic Complexity Budget' && c.status === 'FAIL'), 'validateContract() rechaza código que supera el presupuesto de complejidad (Forzado: 6 > 3)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/over_budget.md');
+  await store.deleteFile(kddRepo.id, 'main', 'src/over_complex.py');
+  await store.deleteFile(kddRepo.id, 'main', 'tests/test_over_complex.py');
 
   // Test 3.13: Forzado de Error 8 - Violación de Perímetro de Dependencias (deps_allowed)
   const forbiddenImportCode = `
@@ -410,6 +421,8 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
   await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/forbidden_dep.md', forbiddenDepContract);
   const auditForbiddenDep = await kdd.validateContract(kddRepo.id, 'knowledge/contracts/forbidden_dep.md');
   assert(auditForbiddenDep.verdict === 'FAILED' && auditForbiddenDep.checks.some(c => c.name === 'Dependency Perimeter' && c.status === 'FAIL'), 'validateContract() detecta importaciones fuera de deps_allowed (Forzado: requests no permitido)');
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/forbidden_dep.md');
+  await store.deleteFile(kddRepo.id, 'main', 'src/forbidden_deps.py');
 
   // -------------------------------------------------------------------------
   // MÓDULO 4: WEBMCP-PROVIDER.JS (FastWebMCP, WebMCP Tools, Playground)
@@ -417,7 +430,7 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
   console.log(`\n${BOLD}[SUITE 4: webmcp-provider.js - FastWebMCP & Estándar webmcp.com]${RESET}`);
 
   // Test 4.1: Registro de herramientas y validación de nombres según spec WebMCP
-  assert(webmcp.registry.size === 10, 'webmcp tiene exactamente 10 herramientas registradas');
+  assert(webmcp.registry.size === 12, 'webmcp tiene exactamente 12 herramientas registradas');
 
   let invalidCharToolError = false;
   try {
@@ -482,6 +495,15 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
   const t10 = await webmcp.invokeTool('update_kdd_task', { card_id: 'card-1', column: 'done' });
   assert(t10.status === 'success' && t10.result.column === 'done', 'Tool 10: update_kdd_task mueve tarjeta a done');
 
+  const t11 = await webmcp.invokeTool('trigger_workflow', { owner: 'MauricioPerera', name: 'KDD', workflow_name: 'validate-contracts' });
+  assert(t11.status === 'success' && t11.result.id && t11.result.status === 'completed', 'Tool 11: trigger_workflow dispara y completa workflow CI/CD');
+
+  const t12 = await webmcp.invokeTool('get_workflow_runs', { owner: 'MauricioPerera', name: 'KDD' });
+  assert(t12.status === 'success' && t12.result.length >= 1, 'Tool 12: get_workflow_runs lista ejecuciones de workflow');
+
+  const t12Single = await webmcp.invokeTool('get_workflow_runs', { owner: 'MauricioPerera', name: 'KDD', run_id: t11.result.id });
+  assert(t12Single.status === 'success' && t12Single.result.id === t11.result.id, 'Tool 12b: get_workflow_runs inspecciona ejecución específica por ID');
+
   // Test 4.3: Invocación de herramientas - Forzado de Errores
   const nonExistentTool = await webmcp.invokeTool('ghost_tool', {});
   assert(nonExistentTool.status === 'error' && nonExistentTool.error.includes('not found'), 'invokeTool() maneja herramienta inexistente (Forzado)');
@@ -494,6 +516,15 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
 
   const updateCardMissing = await webmcp.invokeTool('update_kdd_task', { card_id: 'ghost-card', column: 'done' });
   assert(updateCardMissing.status === 'error', 'Tool update_kdd_task maneja tarjeta inexistente retornando error (Forzado)');
+
+  const triggerWorkflowMissingRepo = await webmcp.invokeTool('trigger_workflow', { owner: 'ghost', name: 'ghost' });
+  assert(triggerWorkflowMissingRepo.status === 'error', 'Tool trigger_workflow rechaza repositorio inexistente (Forzado)');
+
+  const getRunsMissingRepo = await webmcp.invokeTool('get_workflow_runs', { owner: 'ghost', name: 'ghost' });
+  assert(getRunsMissingRepo.status === 'error', 'Tool get_workflow_runs rechaza repositorio inexistente (Forzado)');
+
+  const getRunsMissingRunId = await webmcp.invokeTool('get_workflow_runs', { owner: 'MauricioPerera', name: 'KDD', run_id: 'non-existent-run-id' });
+  assert(getRunsMissingRunId.status === 'error', 'Tool get_workflow_runs maneja run_id inexistente (Forzado)');
 
   // Test 4.4: Declarative WebMCP API (defineDeclarativeTool)
   const mockForm = {
@@ -516,7 +547,7 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
 
   // Test 4.5: Exportación de Directorio JSON compatible con webmcp.com
   const dirJson = webmcp.exportDirectorySchema();
-  assert(dirJson.standard === 'https://webmcp.com' && dirJson.toolsCount === 10, 'exportDirectorySchema() cumple especificación webmcp.com');
+  assert(dirJson.standard === 'https://webmcp.com' && dirJson.toolsCount === 12, 'exportDirectorySchema() cumple especificación webmcp.com con 12 herramientas');
 
   // -------------------------------------------------------------------------
   // MÓDULO 5: APP.JS (Seguridad, XSS, Fechas y UI Helpers)
@@ -550,6 +581,97 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
 
   const threeDaysAgo = new Date(Date.now() - 3 * 86400 * 1000).toISOString();
   assert(app.timeAgo(threeDaysAgo) === '3d ago', 'timeAgo(3d) -> 3d ago');
+
+  // -------------------------------------------------------------------------
+  // MÓDULO 6: ACTIONS-ENGINE.JS (KDD Actions & Client-Side CI/CD Runner)
+  // -------------------------------------------------------------------------
+  console.log(`\n${BOLD}[SUITE 6: actions-engine.js - Motor CI/CD Client-Side KDD Actions]${RESET}`);
+
+  // Test 6.1: Detección de workflows definidos (.github/workflows/*.yml)
+  const wfList = await actions.getWorkflows(kddRepo.id, 'main');
+  assert(Array.isArray(wfList) && wfList.length >= 1, 'getWorkflows() detecta archivos de workflow en repositorio');
+  assert(wfList.some(w => w.name === 'validate-contracts'), 'getWorkflows() localiza el workflow validate-contracts');
+
+  // Test 6.2: Ejecución completa y determinista del pipeline CI/CD (7 pasos)
+  let updateCallbackCount = 0;
+  const ciRun = await actions.runWorkflow({
+    repoId: kddRepo.id,
+    branch: 'main',
+    workflowName: 'validate-contracts',
+    event: 'workflow_dispatch',
+    onUpdate: (r) => { updateCallbackCount++; }
+  });
+
+  assert(ciRun.id.startsWith('run-'), 'runWorkflow() genera ID único con prefijo run-');
+  assert(ciRun.status === 'completed', 'runWorkflow() finaliza con estado completed');
+  assert(ciRun.conclusion === 'success', 'runWorkflow() concluye con veredicto success');
+  assert(ciRun.steps.length === 7, 'runWorkflow() ejecuta los 7 pasos del pipeline determinista');
+  assert(ciRun.steps.every(s => s.status === 'completed' && s.conclusion === 'success'), 'Todos los 7 pasos culminaron exitosamente (status completed, conclusion success)');
+  assert(ciRun.logs.includes('[SUCCESS]') && ciRun.logs.includes('Step 7/7'), 'Terminal de logs contiene salida detallada y reporte sellado');
+  assert(updateCallbackCount >= 7, 'Callback onUpdate() recibe actualizaciones reactivas durante la ejecución');
+
+  // Test 6.3: Verificación de persistencia en store (IndexedDB / LocalStorage)
+  const storedRuns = await store.getWorkflowRuns(kddRepo.id);
+  assert(storedRuns.length >= 1 && storedRuns.some(r => r.id === ciRun.id), 'store.getWorkflowRuns() persiste la ejecución del pipeline');
+
+  const singleStoredRun = await store.getWorkflowRun(ciRun.id);
+  assert(singleStoredRun && singleStoredRun.steps.length === 7, 'store.getWorkflowRun() recupera ejecución completa con sus 7 pasos');
+
+  // Test 6.4: Reporte de evidencia sellado generado en el repositorio
+  const reportFiles = await store.getFiles(kddRepo.id, 'main');
+  const sealedReport = reportFiles.find(f => f.path.startsWith('.agents/logs/ci-run-') && f.path.endsWith('-REPORT.md'));
+  assert(sealedReport && sealedReport.content.includes('PASSED'), 'Paso 7 genera y sella el reporte de evidencia en .agents/logs/*-REPORT.md');
+
+  // Test 6.5: Forzado de Error CI/CD - Nodo OKF sin Frontmatter
+  await store.saveFile(kddRepo.id, 'main', 'knowledge/broken_ci_node.md', '# Broken Node\nSin YAML frontmatter');
+  const brokenOkfRun = await actions.runWorkflow({
+    repoId: kddRepo.id,
+    branch: 'main',
+    workflowName: 'validate-contracts',
+    event: 'push',
+    commitMessage: 'Commit with broken OKF node'
+  });
+  assert(brokenOkfRun.status === 'completed' && brokenOkfRun.conclusion === 'failure', 'runWorkflow() falla determinísticamente ante nodo OKF inválido (Forzado)');
+  assert(brokenOkfRun.steps[1].conclusion === 'failure', 'Paso 2 (Validate OKF Structure) marca conclusion failure ante nodo corrupto');
+  assert(brokenOkfRun.logs.includes('[FAIL] Node \'knowledge/broken_ci_node.md\' missing valid YAML frontmatter'), 'Logs del terminal reflejan falla explícita de validación OKF');
+  // Limpieza
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/broken_ci_node.md');
+
+  // Test 6.6: Forzado de Error CI/CD - Tarea que viola el presupuesto de complejidad ciclomática
+  const heavyContract = `---
+type: Task Contract
+title: Heavy Task
+target: src/heavy.py
+tests: tests/test_heavy.py
+budget:
+  max_cyclomatic_complexity: 2
+---
+# Contract Exceeding Budget
+`;
+  const heavyCode = `
+def complex_fn(a, b, c):
+    if a:
+        if b:
+            return 1
+        elif c:
+            return 2
+    return 0
+`;
+  await store.saveFile(kddRepo.id, 'main', 'knowledge/contracts/heavy_task.md', heavyContract);
+  await store.saveFile(kddRepo.id, 'main', 'src/heavy.py', heavyCode);
+
+  const budgetFailRun = await actions.runWorkflow({
+    repoId: kddRepo.id,
+    branch: 'main',
+    workflowName: 'validate-contracts',
+    event: 'workflow_dispatch'
+  });
+  assert(budgetFailRun.conclusion === 'failure', 'runWorkflow() rechaza pipeline cuando el código excede presupuesto de complejidad (Forzado)');
+  assert(budgetFailRun.steps[3].conclusion === 'failure', 'Paso 4 (Cyclomatic Complexity Budget Check) marca conclusion failure');
+
+  // Limpieza
+  await store.deleteFile(kddRepo.id, 'main', 'knowledge/contracts/heavy_task.md');
+  await store.deleteFile(kddRepo.id, 'main', 'src/heavy.py');
 
   // -------------------------------------------------------------------------
   // RESUMEN FINAL DE EJECUCIÓN

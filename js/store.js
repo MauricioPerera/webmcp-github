@@ -5,8 +5,8 @@
 
 class GitHubStore {
   constructor() {
-    this.dbName = 'GitHubKDDStore_v1';
-    this.version = 1;
+    this.dbName = 'GitHubKDDStore_v2';
+    this.version = 2;
     this.db = null;
     this.listeners = {};
     this.isReady = false;
@@ -32,6 +32,7 @@ class GitHubStore {
           { name: 'issues', keyPath: 'id' },
           { name: 'pullRequests', keyPath: 'id' },
           { name: 'kddBoard', keyPath: 'id' },
+          { name: 'workflowRuns', keyPath: 'id' },
           { name: 'settings', keyPath: 'key' }
         ];
 
@@ -90,6 +91,9 @@ class GitHubStore {
       }
       for (const card of data.kddBoard || []) {
         await this.put('kddBoard', card);
+      }
+      for (const w of data.workflowRuns || []) {
+        await this.put('workflowRuns', w);
       }
 
       console.log('[Store] Seed data loaded successfully.');
@@ -173,7 +177,7 @@ class GitHubStore {
   }
 
   async clearAllStores() {
-    const stores = ['repositories', 'files', 'commits', 'issues', 'pullRequests', 'kddBoard', 'settings'];
+    const stores = ['repositories', 'files', 'commits', 'issues', 'pullRequests', 'kddBoard', 'workflowRuns', 'settings'];
     for (const st of stores) {
       if (this.useLocalStorageFallback) {
         localStorage.removeItem(`gh_store_${st}`);
@@ -373,17 +377,36 @@ class GitHubStore {
     return card;
   }
 
+  // --- KDD Actions / Workflow Runs Methods ---
+  async getWorkflowRuns(repoId) {
+    const all = await this.getAll('workflowRuns');
+    return all
+      .filter(w => w.repoId === repoId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  async getWorkflowRun(id) {
+    return await this.get('workflowRuns', id);
+  }
+
+  async saveWorkflowRun(run) {
+    await this.put('workflowRuns', run);
+    this.emit('workflow_run_updated', run);
+    return run;
+  }
+
   // --- Export & Import Backup ---
   async exportBackup() {
     return {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       repositories: await this.getAll('repositories'),
       files: await this.getAll('files'),
       commits: await this.getAll('commits'),
       issues: await this.getAll('issues'),
       pullRequests: await this.getAll('pullRequests'),
-      kddBoard: await this.getAll('kddBoard')
+      kddBoard: await this.getAll('kddBoard'),
+      workflowRuns: await this.getAll('workflowRuns')
     };
   }
 
@@ -396,6 +419,7 @@ class GitHubStore {
     for (const i of data.issues || []) await this.put('issues', i);
     for (const p of data.pullRequests || []) await this.put('pullRequests', p);
     for (const k of data.kddBoard || []) await this.put('kddBoard', k);
+    for (const w of data.workflowRuns || []) await this.put('workflowRuns', w);
     this.emit('backup_imported', null);
   }
 

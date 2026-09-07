@@ -15,6 +15,7 @@ class GitHubApp {
     this.currentBranch = 'main';
     this.currentTab = 'code';
     this.currentPath = '';
+    this.selectedWorkflowRunId = null;
     this.theme = localStorage.getItem('gh_theme') || 'dark';
 
     this.activeRepo = null;
@@ -108,9 +109,12 @@ class GitHubApp {
         this.currentTab = 'code';
         this.currentBranch = parts[3] || 'main';
         this.currentPath = parts.slice(4).join('/');
-      } else if (['code', 'issues', 'pulls', 'kdd-board', 'contracts', 'commits', 'settings'].includes(action)) {
+      } else if (['code', 'issues', 'pulls', 'actions', 'kdd-board', 'contracts', 'commits', 'settings'].includes(action)) {
         this.currentTab = action;
         this.currentPath = '';
+        if (action === 'actions') {
+          this.selectedWorkflowRunId = parts[3] || null;
+        }
       } else {
         this.currentTab = 'code';
         this.currentPath = '';
@@ -180,6 +184,7 @@ class GitHubApp {
           ${this.renderTabButton('code', 'Code', 'M4.72 3.22a.75.75 0 011.06 1.06L2.06 8l3.72 3.72a.75.75 0 11-1.06 1.06L.47 8.53a.75.75 0 010-1.06l4.25-4.25zm6.56 0a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 11-1.06-1.06L14.94 8l-3.66-3.72a.75.75 0 010-1.06z')}
           ${this.renderTabButton('issues', 'Issues', 'M8 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z M8 0a8 8 0 100 16A8 8 0 008 0zM1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z', 'issuesCount')}
           ${this.renderTabButton('pulls', 'Pull requests', 'M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354zM3.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122v5.256a2.251 2.251 0 11-1.5 0V5.372A2.25 2.25 0 011.5 3.25zM11 2.5h-1V4h1a1 1 0 011 1v4.256a2.251 2.251 0 11-1.5 0V6.5a2.5 2.5 0 00-2.5-2.5h-.5V2.5z', 'prsCount')}
+          ${this.renderTabButton('actions', 'Actions', 'M8 0a8 8 0 100 16A8 8 0 008 0zm-1.5 4.5a.5.5 0 01.764-.424l5 3.5a.5.5 0 010 .848l-5 3.5A.5.5 0 016.5 11.5v-7z', 'actionsCount', 'text-purple-400')}
           ${this.renderTabButton('kdd-board', 'KDD-Board', 'M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0114.25 16H1.75A1.75 1.75 0 010 14.25V1.75zm1.5 0v12.5c0 .138.112.25.25.25H5v-13H1.75a.25.25 0 00-.25.25zm5 12.75h3v-13h-3v13zm4.5 0h3.25a.25.25 0 00.25-.25V1.75a.25.25 0 00-.25-.25H11v13z', null, 'text-emerald-400')}
           ${this.renderTabButton('contracts', 'Contracts & OKF', 'M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75zm1.75-.25a.25.25 0 00-.25.25v10.5c0 .138.112.25.25.25h12.5a.25.25 0 00.25-.25V2.75a.25.25 0 00-.25-.25H1.75zM4 4.5h8v1.5H4V4.5zm0 3h8V9H4V7.5zm0 3h5V12H4v-1.5z', null, 'text-cyan-400')}
           ${this.renderTabButton('commits', 'Commits', 'M1.5 8a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0zM8 0a8 8 0 100 16A8 8 0 008 0zm.75 4.75a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5h-1.75v-2.75z')}
@@ -218,6 +223,9 @@ class GitHubApp {
       case 'pulls':
         area.innerHTML = await this.renderPullRequestsView();
         break;
+      case 'actions':
+        area.innerHTML = await this.renderActionsView();
+        break;
       case 'kdd-board':
         area.innerHTML = await this.renderKddBoardView();
         break;
@@ -240,10 +248,13 @@ class GitHubApp {
   async updateTabCounts() {
     const issues = await this.store.getIssues(this.activeRepo.id, 'open');
     const prs = await this.store.getPullRequests(this.activeRepo.id, 'open');
+    const runs = await this.store.getWorkflowRuns(this.activeRepo.id);
     const issuesEl = document.getElementById('issuesCount');
     const prsEl = document.getElementById('prsCount');
+    const actionsEl = document.getElementById('actionsCount');
     if (issuesEl) issuesEl.textContent = issues.length;
     if (prsEl) prsEl.textContent = prs.length;
+    if (actionsEl) actionsEl.textContent = runs.length;
   }
 
   // --- Code View & File Browser ---
@@ -566,6 +577,229 @@ class GitHubApp {
         </div>
       </div>
     `;
+  }
+
+  // --- KDD Actions (Client-Side CI/CD Workflows) View ---
+  async renderActionsView() {
+    const runs = await this.store.getWorkflowRuns(this.activeRepo.id);
+    const workflows = window.actionsEngine ? await window.actionsEngine.getWorkflows(this.activeRepo.id, this.currentBranch) : [];
+
+    // If viewing a specific run
+    if (this.selectedWorkflowRunId) {
+      const run = runs.find(r => r.id === this.selectedWorkflowRunId) || await this.store.getWorkflowRun(this.selectedWorkflowRunId);
+      if (run) {
+        return this.renderWorkflowRunDetailView(run);
+      }
+      this.selectedWorkflowRunId = null;
+    }
+
+    return `
+      <div class="space-y-4">
+        <!-- Actions Top Banner -->
+        <div class="bg-gradient-to-r from-purple-950/40 via-[#161b22] to-blue-950/40 border border-purple-800/40 rounded-md p-4 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">KDD Actions &middot; Client-Side CI/CD Runner</span>
+              <span class="text-[10px] bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full border border-purple-700">100% In-Browser &middot; 0 Cloud Servers</span>
+            </div>
+            <p class="text-xs text-gray-300 mt-1">Executes deterministic validation pipelines (OKF structure, CCDD task contracts, cyclomatic complexity budget, perimeter audit, and frozen test oracles) entirely client-side.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="app.openRunWorkflowModal()" class="px-3.5 py-1.5 text-xs font-bold bg-[#238636] hover:bg-[#2ea043] text-white rounded-md transition flex items-center gap-1.5 shadow-sm">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm-1.5 4.5a.5.5 0 01.764-.424l5 3.5a.5.5 0 010 .848l-5 3.5A.5.5 0 016.5 11.5v-7z"></path></svg>
+              Run workflow
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Left: Workflows list -->
+          <div class="md:col-span-1 space-y-2">
+            <div class="border border-[#30363d] rounded-md overflow-hidden bg-[#0d1117]">
+              <div class="bg-[#161b22] px-3 py-2 border-b border-[#30363d] text-xs font-bold text-white flex items-center justify-between">
+                <span>Workflows</span>
+                <span class="text-[10px] font-mono text-gray-400">${workflows.length}</span>
+              </div>
+              <div class="divide-y divide-[#21262d] text-xs">
+                ${workflows.map(wf => `
+                  <div class="p-3 hover:bg-[#161b22] cursor-pointer transition" onclick="app.openRunWorkflowModal('${wf.name}')">
+                    <div class="font-semibold text-white flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0a8 8 0 100 16A8 8 0 008 0zm-1.5 4.5a.5.5 0 01.764-.424l5 3.5a.5.5 0 010 .848l-5 3.5A.5.5 0 016.5 11.5v-7z"></path></svg>
+                      ${wf.name}
+                    </div>
+                    <div class="text-[11px] font-mono text-gray-500 mt-1 truncate">${wf.path}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Workflow Runs history -->
+          <div class="md:col-span-3">
+            <div class="border border-[#30363d] rounded-md overflow-hidden bg-[#0d1117]">
+              <div class="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] text-xs font-bold text-white flex items-center justify-between">
+                <span>All workflow runs (${runs.length})</span>
+                <span class="text-[11px] font-mono text-gray-400">Branch: ${this.currentBranch}</span>
+              </div>
+              ${runs.length === 0 ? `
+                <div class="p-8 text-center text-xs text-gray-400 space-y-2">
+                  <p>No workflow runs have been triggered yet for this repository.</p>
+                  <button onclick="app.openRunWorkflowModal()" class="text-blue-400 hover:underline">Trigger your first client-side CI run &rarr;</button>
+                </div>
+              ` : `
+                <div class="divide-y divide-[#21262d]">
+                  ${runs.map(r => `
+                    <div class="p-3.5 hover:bg-[#161b22] flex items-center justify-between gap-3 text-xs transition cursor-pointer" onclick="app.viewWorkflowRun('${r.id}')">
+                      <div class="flex items-start gap-3 min-w-0">
+                        ${this.renderRunStatusIcon(r.status, r.conclusion)}
+                        <div class="min-w-0">
+                          <div class="font-semibold text-white hover:text-blue-400 truncate flex items-center gap-2">
+                            <span>${r.commitMessage || r.workflowName}</span>
+                            <span class="text-[10px] font-mono font-normal px-1.5 py-0.5 rounded bg-[#21262d] text-gray-400 border border-[#30363d]">${r.workflowName}</span>
+                          </div>
+                          <div class="text-[11px] text-gray-500 mt-1 flex flex-wrap items-center gap-2 font-mono">
+                            <span class="text-gray-400">${r.event}</span>
+                            <span>&middot;</span>
+                            <span class="text-blue-400">${r.branch}</span>
+                            <span>&middot;</span>
+                            <span class="text-gray-400">${r.commitId ? r.commitId.substring(0, 7) : 'head'}</span>
+                            <span>&middot;</span>
+                            <span class="text-gray-500">${this.timeAgo(r.createdAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0 font-mono text-[11px] text-gray-400">
+                        <div>${r.duration || '0s'}</div>
+                        <div class="text-[10px] text-gray-500">${r.author || 'KDD Actions'}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderWorkflowRunDetailView(run) {
+    const isRunning = run.status === 'in_progress';
+    return `
+      <div class="space-y-4">
+        <!-- Detail Header Breadcrumb & Actions -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#30363d]">
+          <div class="flex items-center gap-2">
+            <button onclick="app.viewAllWorkflowRuns()" class="text-xs text-blue-400 hover:underline flex items-center gap-1 font-semibold">
+              &larr; All runs
+            </button>
+            <span class="text-gray-500">/</span>
+            <div class="flex items-center gap-2">
+              ${this.renderRunStatusIcon(run.status, run.conclusion)}
+              <h2 class="text-sm font-bold text-white">${run.commitMessage || run.workflowName}</h2>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#21262d] text-gray-300 border border-[#30363d]">${run.workflowName}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="app.rerunWorkflow('${run.id}')" ${isRunning ? 'disabled' : ''} class="px-2.5 py-1 text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-gray-200 border border-[#30363d] rounded transition flex items-center gap-1 disabled:opacity-50">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 2.5a5.487 5.487 0 00-4.131 1.869l1.204 1.204A.25.25 0 014.896 6H1.25A.25.25 0 011 5.75V2.104a.25.25 0 01.427-.177l1.38 1.38A7.001 7.001 0 0115 8a.75.75 0 01-1.5 0 5.5 5.5 0 00-5.5-5.5z"></path></svg>
+              Re-run workflow
+            </button>
+          </div>
+        </div>
+
+        <!-- Run Metadata Bar -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-md p-3 text-xs flex flex-wrap items-center justify-between gap-4 font-mono">
+          <div class="flex items-center gap-3">
+            <span class="text-gray-400">Branch: <span class="text-blue-400 font-bold">${run.branch}</span></span>
+            <span class="text-gray-500">&middot;</span>
+            <span class="text-gray-400">Commit: <span class="text-white">${run.commitId ? run.commitId.substring(0, 7) : 'head'}</span></span>
+            <span class="text-gray-500">&middot;</span>
+            <span class="text-gray-400">Trigger: <span class="text-purple-400">${run.event}</span></span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-gray-400">Duration: <span class="text-white font-bold" id="run-duration-display">${run.duration}</span></span>
+            <span class="text-gray-500">&middot;</span>
+            <span class="text-gray-400">Started: <span class="text-gray-300">${new Date(run.createdAt).toLocaleTimeString()}</span></span>
+          </div>
+        </div>
+
+        <!-- 2-Column Runner Grid: Steps & Real-Time Streaming Logs -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Left: 7 Steps List -->
+          <div class="border border-[#30363d] rounded-md overflow-hidden bg-[#0d1117]">
+            <div class="bg-[#161b22] px-3.5 py-2 border-b border-[#30363d] text-xs font-bold text-white flex items-center justify-between">
+              <span>Deterministic Gate Steps</span>
+              <span class="text-[10px] font-mono text-purple-400">7 Steps</span>
+            </div>
+            <div class="divide-y divide-[#21262d] text-xs" id="actions-step-list">
+              ${(run.steps || []).map((step, idx) => `
+                <div class="p-3 flex items-center justify-between gap-2 ${step.status === 'in_progress' ? 'bg-blue-950/20' : ''}">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    ${this.renderStepStatusIcon(step.status, step.conclusion)}
+                    <span class="font-medium text-gray-200 truncate">${step.name}</span>
+                  </div>
+                  <span class="font-mono text-[11px] text-gray-500 shrink-0">${step.duration || '0s'}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Right: Streaming Terminal Logs Box -->
+          <div class="lg:col-span-2 border border-[#30363d] rounded-md overflow-hidden bg-[#0d1117] flex flex-col">
+            <div class="bg-[#161b22] px-3.5 py-2 border-b border-[#30363d] text-xs font-bold text-white flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-blue-400 animate-ping' : (run.conclusion === 'success' ? 'bg-emerald-500' : 'bg-red-500')}"></span>
+                <span class="font-mono text-gray-300">Terminal Log Output</span>
+              </div>
+              <button onclick="app.copyRunLogs()" class="text-xs text-gray-400 hover:text-white font-mono flex items-center gap-1">
+                Copy raw
+              </button>
+            </div>
+            <div class="p-4 overflow-y-auto max-h-[500px] min-h-[350px] font-mono text-xs text-gray-300 leading-relaxed bg-[#0a0d12]" id="actions-terminal-logs">
+              <pre class="whitespace-pre-wrap select-text">${this.formatTerminalLogs(run.logs || '')}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderRunStatusIcon(status, conclusion) {
+    if (status === 'in_progress') {
+      return `<svg class="w-4 h-4 text-blue-400 animate-spin shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+    }
+    if (conclusion === 'success') {
+      return `<svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M16 8A8 8 0 110 8a8 8 0 0116 0zm-3.97-3.03a.75.75 0 00-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 00-1.06 1.06L6.97 11.03a.75.75 0 001.079-.02l3.992-4.99a.75.75 0 00-.01-1.05z"></path></svg>`;
+    }
+    if (conclusion === 'failure') {
+      return `<svg class="w-4 h-4 text-red-400 shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M16 8A8 8 0 110 8a8 8 0 0116 0zm-4.72-2.28a.75.75 0 00-1.06 0L8 7.94 5.78 5.72a.75.75 0 00-1.06 1.06L6.94 9l-2.22 2.22a.75.75 0 101.06 1.06L8 10.06l2.22 2.22a.75.75 0 001.06-1.06L9.06 9l2.22-2.22a.75.75 0 000-1.06z"></path></svg>`;
+    }
+    return `<svg class="w-4 h-4 text-gray-500 shrink-0 mt-0.5" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm.75 4.75a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5h-1.75v-2.75z"></path></svg>`;
+  }
+
+  renderStepStatusIcon(status, conclusion) {
+    if (status === 'in_progress') {
+      return `<svg class="w-3.5 h-3.5 text-blue-400 animate-spin shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+    }
+    if (conclusion === 'success') {
+      return `<svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg>`;
+    }
+    if (conclusion === 'failure') {
+      return `<svg class="w-3.5 h-3.5 text-red-400 shrink-0" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"></path></svg>`;
+    }
+    return `<span class="w-3.5 h-3.5 rounded-full border border-gray-600 inline-block shrink-0"></span>`;
+  }
+
+  formatTerminalLogs(logs) {
+    if (!logs) return '';
+    return logs
+      .replace(/\[INFO\]/g, '<span class="text-cyan-400 font-bold">[INFO]</span>')
+      .replace(/\[PASS\]/g, '<span class="text-emerald-400 font-bold">[PASS]</span>')
+      .replace(/\[FAIL\]/g, '<span class="text-red-400 font-bold">[FAIL]</span>')
+      .replace(/\[SUCCESS\]/g, '<span class="text-emerald-300 font-bold bg-emerald-950/80 px-1 rounded">[SUCCESS]</span>')
+      .replace(/\[FAILURE\]/g, '<span class="text-red-300 font-bold bg-red-950/80 px-1 rounded">[FAILURE]</span>');
   }
 
   // --- KDD-Board (Kanban) View ---
@@ -1109,6 +1343,19 @@ class GitHubApp {
     });
     this.closeNewFileModal();
     this.toast(`Committed ${path}!`);
+
+    // Auto-trigger client-side KDD Actions CI on push
+    if (window.actionsEngine) {
+      window.actionsEngine.runWorkflow({
+        repoId: this.activeRepo.id,
+        branch: this.currentBranch,
+        event: 'push',
+        commitMessage: message
+      }).then(() => {
+        this.updateTabCounts();
+      }).catch(err => console.error('[Actions] Push auto-trigger failed:', err));
+    }
+
     this.navigatePath(path);
   }
 
@@ -1300,8 +1547,142 @@ class GitHubApp {
     }
   }
 
-  refreshCurrentView() {
-    this.renderContentArea();
+  // --- KDD Actions Interactive Controls ---
+  viewWorkflowRun(runId) {
+    this.selectedWorkflowRunId = runId;
+    window.location.hash = `#/${this.currentOwner}/${this.currentRepoName}/actions/${runId}`;
+  }
+
+  viewAllWorkflowRuns() {
+    this.selectedWorkflowRunId = null;
+    window.location.hash = `#/${this.currentOwner}/${this.currentRepoName}/actions`;
+  }
+
+  async openRunWorkflowModal(defaultWorkflow = null) {
+    const modal = document.getElementById('run-workflow-modal');
+    if (!modal) return;
+
+    const workflows = window.actionsEngine ? await window.actionsEngine.getWorkflows(this.activeRepo.id, this.currentBranch) : [];
+    const wfSelect = document.getElementById('dispatch-workflow-select');
+    const brSelect = document.getElementById('dispatch-branch-select');
+
+    if (wfSelect) {
+      wfSelect.innerHTML = workflows.map(w => `
+        <option value="${w.name}" ${w.name === defaultWorkflow ? 'selected' : ''}>
+          ${w.name} (${w.path})
+        </option>
+      `).join('');
+    }
+
+    if (brSelect && this.activeRepo) {
+      brSelect.innerHTML = (this.activeRepo.branches || ['main']).map(b => `
+        <option value="${b}" ${b === this.currentBranch ? 'selected' : ''}>
+          ${b}
+        </option>
+      `).join('');
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  closeRunWorkflowModal() {
+    document.getElementById('run-workflow-modal')?.classList.add('hidden');
+  }
+
+  async dispatchWorkflow() {
+    const wfSelect = document.getElementById('dispatch-workflow-select');
+    const brSelect = document.getElementById('dispatch-branch-select');
+    const workflowName = wfSelect ? wfSelect.value : 'validate-contracts';
+    const branch = brSelect ? brSelect.value : this.currentBranch;
+
+    this.closeRunWorkflowModal();
+    this.toast(`Triggered workflow '${workflowName}' on '${branch}'...`);
+
+    if (!window.actionsEngine) {
+      return alert('Actions engine not loaded.');
+    }
+
+    try {
+      this.currentTab = 'actions';
+
+      const run = await window.actionsEngine.runWorkflow({
+        repoId: this.activeRepo.id,
+        branch,
+        workflowName,
+        event: 'workflow_dispatch',
+        onUpdate: (updatedRun) => {
+          if (this.currentTab === 'actions' && this.selectedWorkflowRunId === updatedRun.id) {
+            this.updateLiveRunDisplay(updatedRun);
+          }
+        }
+      });
+
+      this.selectedWorkflowRunId = run.id;
+      window.location.hash = `#/${this.currentOwner}/${this.currentRepoName}/actions/${run.id}`;
+      this.updateTabCounts();
+    } catch (err) {
+      console.error('[Actions] Dispatch failed:', err);
+      alert('Workflow execution failed: ' + err.message);
+    }
+  }
+
+  async rerunWorkflow(runId) {
+    const existing = await this.store.getWorkflowRun(runId);
+    if (!existing || !window.actionsEngine) return;
+
+    this.toast(`Re-running workflow '${existing.workflowName}'...`);
+    try {
+      const run = await window.actionsEngine.runWorkflow({
+        repoId: this.activeRepo.id,
+        branch: existing.branch,
+        workflowName: existing.workflowName,
+        event: existing.event || 'workflow_dispatch',
+        onUpdate: (updatedRun) => {
+          if (this.currentTab === 'actions' && this.selectedWorkflowRunId === updatedRun.id) {
+            this.updateLiveRunDisplay(updatedRun);
+          }
+        }
+      });
+      this.selectedWorkflowRunId = run.id;
+      window.location.hash = `#/${this.currentOwner}/${this.currentRepoName}/actions/${run.id}`;
+      this.updateTabCounts();
+    } catch (err) {
+      alert('Re-run failed: ' + err.message);
+    }
+  }
+
+  updateLiveRunDisplay(run) {
+    const logsBox = document.getElementById('actions-terminal-logs');
+    if (logsBox) {
+      logsBox.innerHTML = `<pre class="whitespace-pre-wrap select-text">${this.formatTerminalLogs(run.logs || '')}</pre>`;
+      logsBox.scrollTop = logsBox.scrollHeight;
+    }
+    const stepList = document.getElementById('actions-step-list');
+    if (stepList && run.steps) {
+      stepList.innerHTML = run.steps.map(step => `
+        <div class="p-3 flex items-center justify-between gap-2 ${step.status === 'in_progress' ? 'bg-blue-950/20' : ''}">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${this.renderStepStatusIcon(step.status, step.conclusion)}
+            <span class="font-medium text-gray-200 truncate">${step.name}</span>
+          </div>
+          <span class="font-mono text-[11px] text-gray-500 shrink-0">${step.duration || '0s'}</span>
+        </div>
+      `).join('');
+    }
+    const durationEl = document.getElementById('run-duration-display');
+    if (durationEl) durationEl.textContent = run.duration || '0s';
+  }
+
+  async copyRunLogs() {
+    if (!this.selectedWorkflowRunId) return;
+    const run = await this.store.getWorkflowRun(this.selectedWorkflowRunId);
+    if (run && run.logs) {
+      navigator.clipboard.writeText(run.logs).then(() => {
+        this.toast('Logs copied to clipboard!');
+      }).catch(() => {
+        this.toast('Failed to copy logs.');
+      });
+    }
   }
 
   // --- Utilities ---

@@ -5,10 +5,11 @@
  */
 
 class WebMCPProvider {
-  constructor(store, gitEngine, kddEngine) {
+  constructor(store, gitEngine, kddEngine, actionsEngine = null) {
     this.store = store;
     this.git = gitEngine;
     this.kdd = kddEngine;
+    this.actionsEngine = actionsEngine;
     this.registry = new Map();
     this.setupPolyfill();
   }
@@ -360,6 +361,63 @@ class WebMCPProvider {
       }
     });
 
+    // 11. trigger_workflow
+    this.registerImperativeTool({
+      name: 'trigger_workflow',
+      description: 'Trigger a deterministic KDD Actions workflow CI/CD run in the browser (client-side GitHub Actions).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string' },
+          name: { type: 'string' },
+          workflow_name: { type: 'string', description: 'Workflow name (default: validate-contracts)' },
+          branch: { type: 'string', description: 'Branch name (default: main)' }
+        },
+        required: ['owner', 'name']
+      },
+      annotations: { readOnlyHint: false },
+      execute: async ({ owner, name, workflow_name = 'validate-contracts', branch = 'main' }) => {
+        const repo = await this.store.getRepository(owner, name);
+        if (!repo) throw new Error(`Repository ${owner}/${name} not found`);
+        const engine = this.actionsEngine || (typeof window !== 'undefined' ? window.actionsEngine : null);
+        if (!engine) throw new Error('ActionsEngine not initialized');
+        const run = await engine.runWorkflow({
+          repoId: repo.id,
+          branch,
+          workflowName: workflow_name,
+          event: 'workflow_dispatch'
+        });
+        return run;
+      }
+    });
+
+    // 12. get_workflow_runs
+    this.registerImperativeTool({
+      name: 'get_workflow_runs',
+      description: 'List workflow runs or inspect a specific workflow run and its step execution logs.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          owner: { type: 'string' },
+          name: { type: 'string' },
+          run_id: { type: 'string', description: 'Optional specific run ID to inspect' }
+        },
+        required: ['owner', 'name']
+      },
+      annotations: { readOnlyHint: true },
+      execute: async ({ owner, name, run_id }) => {
+        const repo = await this.store.getRepository(owner, name);
+        if (!repo) throw new Error(`Repository ${owner}/${name} not found`);
+        if (run_id) {
+          const run = await this.store.getWorkflowRun(run_id);
+          if (!run) throw new Error(`Workflow run ${run_id} not found.`);
+          return run;
+        }
+        const runs = await this.store.getWorkflowRuns(repo.id);
+        return runs;
+      }
+    });
+
     console.log(`[WebMCP] Successfully registered ${this.registry.size} tools conforming to webmcp.com.`);
   }
 
@@ -402,5 +460,9 @@ class WebMCPProvider {
   }
 }
 
-window.webMcpProvider = new WebMCPProvider(window.ghStore, window.gitEngine, window.kddEngine);
+window.webMcpProvider = new WebMCPProvider(window.ghStore, window.gitEngine, window.kddEngine, window.actionsEngine);
 window.webMcpProvider.initDefaultTools();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { WebMCPProvider };
+}
