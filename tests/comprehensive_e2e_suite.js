@@ -113,6 +113,66 @@ async function runSuite() {
   const newRepoCommits = await store.getCommits(newRepo.id, 'main');
   assert(newRepoCommits.length === 1, 'store.createRepository() autogenera commit inicial');
 
+  // Test 1.5b (FT-03): Forzado de error por nombre de repositorio vacío
+  let emptyRepoNameCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: '   ' });
+  } catch (err) {
+    emptyRepoNameCaught = err.message.includes('Repository name is required');
+  }
+  assert(emptyRepoNameCaught, 'store.createRepository() rechaza nombre vacío o con puros espacios (Forzado)');
+
+  // Test 1.5c (FT-03): Forzado de error por caracteres especiales / inyección XSS en nombre
+  let scriptNameCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: '<script>alert(1)</script>' });
+  } catch (err) {
+    scriptNameCaught = err.message.includes('Spaces and special characters are not allowed');
+  }
+  assert(scriptNameCaught, 'store.createRepository() rechaza caracteres de inyección HTML/Script (Forzado)');
+
+  let spacesNameCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: 'repo with spaces' });
+  } catch (err) {
+    spacesNameCaught = err.message.includes('Spaces and special characters are not allowed');
+  }
+  assert(spacesNameCaught, 'store.createRepository() rechaza espacios en el nombre (Forzado)');
+
+  let symbolsNameCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: 'repo!@#$%^&*()' });
+  } catch (err) {
+    symbolsNameCaught = err.message.includes('Spaces and special characters are not allowed');
+  }
+  assert(symbolsNameCaught, 'store.createRepository() rechaza caracteres especiales prohibidos (Forzado)');
+
+  // Test 1.5d (FT-03): Forzado de error por nombres reservados o terminados en .git
+  let dotNameCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: '.' });
+  } catch (err) {
+    dotNameCaught = err.message.includes('reserved or invalid');
+  }
+  assert(dotNameCaught, 'store.createRepository() rechaza nombre reservado "." (Forzado)');
+
+  let dotGitNameCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: 'my-project.git' });
+  } catch (err) {
+    dotGitNameCaught = err.message.includes('reserved or invalid');
+  }
+  assert(dotGitNameCaught, 'store.createRepository() rechaza nombres terminados en ".git" (Forzado)');
+
+  // Test 1.5e (FT-03): Forzado de error por repositorio duplicado
+  let duplicateRepoCaught = false;
+  try {
+    await store.createRepository({ owner: 'alice', name: 'demo-repo' });
+  } catch (err) {
+    duplicateRepoCaught = err.message.includes('already exists');
+  }
+  assert(duplicateRepoCaught, 'store.createRepository() rechaza repositorio duplicado para el mismo owner (Forzado)');
+
   // Test 1.6: getFile existente vs inexistente (Forzado)
   const existingFile = await store.getFile(kddRepo.id, 'main', 'README.md');
   assert(existingFile !== null && existingFile.content.includes('KDD'), 'store.getFile() obtiene archivo existente');
@@ -132,15 +192,65 @@ async function runSuite() {
   const issue2 = await store.createIssue({ repoId: kddRepo.id, title: 'Test issue 2', body: 'Body 2', author: 'tester' });
   assert(issue2.number === issue1.number + 1, 'store.createIssue() incrementa número de issue deterministamente');
 
+  // Test 1.8b (FT-01/FT-02): Forzado de error por issue con título vacío o sin repoId
+  let emptyIssueTitleCaught = false;
+  try {
+    await store.createIssue({ repoId: kddRepo.id, title: '   ' });
+  } catch (err) {
+    emptyIssueTitleCaught = err.message.includes('Title is required');
+  }
+  assert(emptyIssueTitleCaught, 'store.createIssue() rechaza título vacío o con puros espacios (Forzado)');
+
+  let missingIssueRepoCaught = false;
+  try {
+    await store.createIssue({ title: 'No repo ID' });
+  } catch (err) {
+    missingIssueRepoCaught = err.message.includes('Repository ID is required');
+  }
+  assert(missingIssueRepoCaught, 'store.createIssue() rechaza creación de issue sin repoId (Forzado)');
+
   // Test 1.9: getIssue existente vs inexistente (Forzado)
   const foundIssue = await store.getIssue(kddRepo.id, issue1.number);
   assert(foundIssue !== null && foundIssue.title === 'Test issue 1', 'store.getIssue() encuentra issue por número');
   const notFoundIssue = await store.getIssue(kddRepo.id, 999999);
   assert(notFoundIssue === null, 'store.getIssue() retorna null ante número inexistente (Forzado)');
 
-  // Test 1.10: Pull Requests
+  // Test 1.10: Pull Requests (Happy path y Casos borde)
   const pr = await store.createPullRequest({ repoId: kddRepo.id, title: 'New PR', sourceBranch: 'feature', targetBranch: 'main' });
   assert(pr && pr.number >= 1, 'store.createPullRequest() crea PR exitosamente');
+
+  let emptyPrTitleCaught = false;
+  try {
+    await store.createPullRequest({ repoId: kddRepo.id, title: '  ', sourceBranch: 'feature', targetBranch: 'main' });
+  } catch (err) {
+    emptyPrTitleCaught = err.message.includes('Pull request title is required');
+  }
+  assert(emptyPrTitleCaught, 'store.createPullRequest() rechaza título vacío (Forzado)');
+
+  let samePrBranchesCaught = false;
+  try {
+    await store.createPullRequest({ repoId: kddRepo.id, title: 'Same branches', sourceBranch: 'main', targetBranch: 'main' });
+  } catch (err) {
+    samePrBranchesCaught = err.message.includes('cannot be identical');
+  }
+  assert(samePrBranchesCaught, 'store.createPullRequest() rechaza ramas fuente y destino idénticas (Forzado)');
+
+  // Test 1.10b: Forzado de error en saveFile (path vacío o path traversal)
+  let emptyFilePathCaught = false;
+  try {
+    await store.saveFile(kddRepo.id, 'main', '   ', 'some content');
+  } catch (err) {
+    emptyFilePathCaught = err.message.includes('File path is required');
+  }
+  assert(emptyFilePathCaught, 'store.saveFile() rechaza path vacío (Forzado)');
+
+  let pathTraversalCaught = false;
+  try {
+    await store.saveFile(kddRepo.id, 'main', '../../sensitive.txt', 'secret');
+  } catch (err) {
+    pathTraversalCaught = err.message.includes('path traversal is not allowed');
+  }
+  assert(pathTraversalCaught, 'store.saveFile() rechaza path traversal ("..") (Forzado)');
 
   // Test 1.11: Tarjetas KDD y actualización
   const card = await store.createKddCard({ repoId: kddRepo.id, task: 'unit_test_task', title: 'Task Card' });
@@ -581,6 +691,107 @@ Ref [OKF-SPEC.md](../OKF-SPEC.md)
 
   const threeDaysAgo = new Date(Date.now() - 3 * 86400 * 1000).toISOString();
   assert(app.timeAgo(threeDaysAgo) === '3d ago', 'timeAgo(3d) -> 3d ago');
+
+  // Test 5.3 (FT-01/FT-02): Visual feedback helper (showFieldError & clearFieldError)
+  class MockClassList {
+    constructor(initial = []) { this.classes = new Set(initial); }
+    add(...cls) { cls.forEach(c => this.classes.add(c)); }
+    remove(...cls) { cls.forEach(c => this.classes.delete(c)); }
+    contains(c) { return this.classes.has(c); }
+  }
+  class MockElement {
+    constructor(id, initialClasses = []) {
+      this.id = id;
+      this.classList = new MockClassList(initialClasses);
+      this.value = '';
+      this.textContent = '';
+      this.dataset = {};
+      this.listeners = {};
+    }
+    addEventListener(evt, fn) {
+      if (!this.listeners[evt]) this.listeners[evt] = [];
+      this.listeners[evt].push(fn);
+    }
+    trigger(evt) {
+      (this.listeners[evt] || []).forEach(fn => fn());
+    }
+    focus() { this.focused = true; }
+  }
+
+  const mockElements = {
+    'new-repo-name': new MockElement('new-repo-name'),
+    'new-repo-desc': new MockElement('new-repo-desc'),
+    'new-repo-name-error': new MockElement('new-repo-name-error', ['hidden']),
+    'new-repo-name-error-text': new MockElement('new-repo-name-error-text'),
+    'issue-title-input': new MockElement('issue-title-input'),
+    'issue-body-input': new MockElement('issue-body-input'),
+    'issue-title-error': new MockElement('issue-title-error', ['hidden']),
+    'issue-title-error-text': new MockElement('issue-title-error-text'),
+    'pr-title-input': new MockElement('pr-title-input'),
+    'pr-source-select': new MockElement('pr-source-select'),
+    'pr-body-input': new MockElement('pr-body-input'),
+    'pr-title-error': new MockElement('pr-title-error', ['hidden']),
+    'pr-title-error-text': new MockElement('pr-title-error-text'),
+    'pr-branch-error': new MockElement('pr-branch-error', ['hidden']),
+    'pr-branch-error-text': new MockElement('pr-branch-error-text')
+  };
+
+  global.document.getElementById = (id) => mockElements[id] || null;
+
+  app.showFieldError('new-repo-name', 'new-repo-name-error', 'new-repo-name-error-text', 'Test error message');
+  assert(
+    mockElements['new-repo-name'].classList.contains('border-red-500') &&
+    mockElements['new-repo-name'].classList.contains('ring-1') &&
+    mockElements['new-repo-name-error-text'].textContent === 'Test error message' &&
+    !mockElements['new-repo-name-error'].classList.contains('hidden') &&
+    mockElements['new-repo-name-error'].classList.contains('flex'),
+    'showFieldError() resalta borde rojo en input y despliega contenedor de error'
+  );
+
+  app.clearFieldError('new-repo-name', 'new-repo-name-error');
+  assert(
+    !mockElements['new-repo-name'].classList.contains('border-red-500') &&
+    !mockElements['new-repo-name-error'].classList.contains('flex') &&
+    mockElements['new-repo-name-error'].classList.contains('hidden'),
+    'clearFieldError() remueve borde rojo y oculta mensaje de error'
+  );
+
+  // Test 5.4 (FT-01/FT-02): submitNewRepo() sin nombre despliega mensaje y borde rojo
+  mockElements['new-repo-name'].value = '';
+  await app.submitNewRepo();
+  assert(
+    mockElements['new-repo-name'].classList.contains('border-red-500') &&
+    mockElements['new-repo-name-error-text'].textContent.includes('Repository name is required'),
+    'submitNewRepo() valida campo obligatorio con borde rojo y mensaje accesible (FT-01)'
+  );
+
+  // Test 5.5 (FT-03): submitNewRepo() con caracteres inválidos despliega mensaje descriptivo
+  mockElements['new-repo-name'].value = 'repo with spaces and <script>';
+  await app.submitNewRepo();
+  assert(
+    mockElements['new-repo-name'].classList.contains('border-red-500') &&
+    mockElements['new-repo-name-error-text'].textContent.includes('Spaces and special characters are not allowed'),
+    'submitNewRepo() rechaza caracteres no permitidos e instruye formato válido (FT-03)'
+  );
+
+  // Test 5.6 (FT-01/FT-02): submitNewIssue() sin título despliega error visual y mensaje
+  mockElements['issue-title-input'].value = '';
+  await app.submitNewIssue();
+  assert(
+    mockElements['issue-title-input'].classList.contains('border-red-500') &&
+    mockElements['issue-title-error-text'].textContent.includes('Title is required'),
+    'submitNewIssue() valida campo obligatorio con borde rojo y mensaje accesible (FT-02)'
+  );
+
+  // Test 5.7: submitNewPr() con título vacío o ramas idénticas despliega alertas visuales
+  mockElements['pr-title-input'].value = '';
+  mockElements['pr-source-select'].value = 'main';
+  await app.submitNewPr();
+  assert(
+    mockElements['pr-title-input'].classList.contains('border-red-500') &&
+    mockElements['pr-branch-error-text'].textContent.includes('cannot be identical'),
+    'submitNewPr() valida título requerido y ramas distintas con señalización visual'
+  );
 
   // -------------------------------------------------------------------------
   // MÓDULO 6: ACTIONS-ENGINE.JS (KDD Actions & Client-Side CI/CD Runner)

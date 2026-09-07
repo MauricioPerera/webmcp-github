@@ -203,10 +203,31 @@ class GitHubStore {
   }
 
   async createRepository(repoData) {
+    if (!repoData || typeof repoData !== 'object') {
+      throw new Error('Repository data must be provided.');
+    }
+    const rawName = typeof repoData.name === 'string' ? repoData.name.trim() : '';
+    if (!rawName) {
+      throw new Error('Repository name is required.');
+    }
+    const validRepoNameRegex = /^[a-zA-Z0-9_.-]{1,100}$/;
+    if (!validRepoNameRegex.test(rawName)) {
+      throw new Error('Repository name can only contain letters, numbers, hyphens (-), underscores (_), and periods (.). Spaces and special characters are not allowed.');
+    }
+    if (rawName === '.' || rawName === '..' || rawName.toLowerCase().endsWith('.git')) {
+      throw new Error('Repository name is reserved or invalid.');
+    }
+
+    const owner = (typeof repoData.owner === 'string' && repoData.owner.trim()) ? repoData.owner.trim() : 'user';
+    const existing = await this.getRepository(owner, rawName);
+    if (existing) {
+      throw new Error(`The repository ${owner}/${rawName} already exists.`);
+    }
+
     const repo = {
       id: 'repo-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-      owner: repoData.owner || 'user',
-      name: repoData.name,
+      owner,
+      name: rawName,
       description: repoData.description || '',
       defaultBranch: 'main',
       isPrivate: !!repoData.isPrivate,
@@ -248,7 +269,14 @@ class GitHubStore {
   }
 
   async saveFile(repoId, branch, path, content) {
-    const file = { repoId, branch, path, content };
+    if (!path || typeof path !== 'string' || !path.trim()) {
+      throw new Error('File path is required.');
+    }
+    const cleanPath = path.trim().replace(/^[\/\\]+/, '');
+    if (cleanPath.split(/[\/\\]/).some(p => p === '..')) {
+      throw new Error('Invalid file path: path traversal is not allowed.');
+    }
+    const file = { repoId, branch, path: cleanPath, content: content !== undefined && content !== null ? String(content) : '' };
     await this.put('files', file);
     this.emit('file_saved', file);
     return file;
@@ -299,13 +327,23 @@ class GitHubStore {
   }
 
   async createIssue(issueData) {
+    if (!issueData || typeof issueData !== 'object') {
+      throw new Error('Issue data must be provided.');
+    }
+    if (!issueData.repoId) {
+      throw new Error('Repository ID is required for creating an issue.');
+    }
+    const title = typeof issueData.title === 'string' ? issueData.title.trim() : '';
+    if (!title) {
+      throw new Error('Title is required. Please provide a descriptive title before submitting.');
+    }
     const existing = await this.getIssues(issueData.repoId, 'all');
     const nextNumber = existing.length > 0 ? Math.max(...existing.map(i => i.number)) + 1 : 1;
     const issue = {
       id: 'issue-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
       repoId: issueData.repoId,
       number: nextNumber,
-      title: issueData.title,
+      title,
       body: issueData.body || '',
       state: 'open',
       author: issueData.author || 'Current User',
@@ -326,18 +364,34 @@ class GitHubStore {
   }
 
   async createPullRequest(prData) {
+    if (!prData || typeof prData !== 'object') {
+      throw new Error('Pull request data must be provided.');
+    }
+    if (!prData.repoId) {
+      throw new Error('Repository ID is required for creating a pull request.');
+    }
+    const title = typeof prData.title === 'string' ? prData.title.trim() : '';
+    if (!title) {
+      throw new Error('Pull request title is required.');
+    }
+    const sourceBranch = prData.sourceBranch || 'feature';
+    const targetBranch = prData.targetBranch || 'main';
+    if (sourceBranch === targetBranch) {
+      throw new Error(`Head branch and base branch cannot be identical (${sourceBranch} -> ${targetBranch}).`);
+    }
+
     const existing = await this.getPullRequests(prData.repoId, 'all');
     const nextNumber = existing.length > 0 ? Math.max(...existing.map(p => p.number)) + 1 : 1;
     const pr = {
       id: 'pr-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
       repoId: prData.repoId,
       number: nextNumber,
-      title: prData.title,
+      title,
       body: prData.body || '',
       state: 'open',
       author: prData.author || 'Current User',
-      sourceBranch: prData.sourceBranch || 'feature',
-      targetBranch: prData.targetBranch || 'main',
+      sourceBranch,
+      targetBranch,
       createdAt: new Date().toISOString()
     };
     await this.put('pullRequests', pr);

@@ -1296,70 +1296,198 @@ class GitHubApp {
         ]
       });
     }
+
+    // Live validation error clearing listeners
+    const repoInput = document.getElementById('new-repo-name');
+    if (repoInput && !repoInput.dataset.hasValidationListener) {
+      repoInput.dataset.hasValidationListener = 'true';
+      repoInput.addEventListener('input', () => {
+        this.clearFieldError('new-repo-name', 'new-repo-name-error');
+      });
+    }
+
+    const issueTitleInput = document.getElementById('issue-title-input');
+    if (issueTitleInput && !issueTitleInput.dataset.hasValidationListener) {
+      issueTitleInput.dataset.hasValidationListener = 'true';
+      issueTitleInput.addEventListener('input', () => {
+        this.clearFieldError('issue-title-input', 'issue-title-error');
+      });
+    }
+
+    const prTitleInput = document.getElementById('pr-title-input');
+    if (prTitleInput && !prTitleInput.dataset.hasValidationListener) {
+      prTitleInput.dataset.hasValidationListener = 'true';
+      prTitleInput.addEventListener('input', () => {
+        this.clearFieldError('pr-title-input', 'pr-title-error');
+      });
+    }
+
+    const prSourceSelect = document.getElementById('pr-source-select');
+    if (prSourceSelect && !prSourceSelect.dataset.hasValidationListener) {
+      prSourceSelect.dataset.hasValidationListener = 'true';
+      prSourceSelect.addEventListener('change', () => {
+        this.clearFieldError('pr-source-select', 'pr-branch-error');
+      });
+    }
+
+    const filePathInput = document.getElementById('new-file-path');
+    if (filePathInput && !filePathInput.dataset.hasValidationListener) {
+      filePathInput.dataset.hasValidationListener = 'true';
+      filePathInput.addEventListener('input', () => {
+        this.clearFieldError('new-file-path', 'new-file-path-error');
+      });
+    }
+  }
+
+  showFieldError(inputId, errorContainerId, errorTextId, message) {
+    const inputEl = document.getElementById(inputId);
+    const errorEl = document.getElementById(errorContainerId);
+    const textEl = document.getElementById(errorTextId);
+    if (inputEl) {
+      inputEl.classList.add('border-red-500', 'focus:border-red-500', 'ring-1', 'ring-red-500/30');
+      inputEl.focus();
+    }
+    if (textEl) {
+      textEl.textContent = message;
+    }
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      errorEl.classList.add('flex');
+    }
+  }
+
+  clearFieldError(inputId, errorContainerId) {
+    const inputEl = document.getElementById(inputId);
+    const errorEl = document.getElementById(errorContainerId);
+    if (inputEl) {
+      inputEl.classList.remove('border-red-500', 'focus:border-red-500', 'ring-1', 'ring-red-500/30');
+    }
+    if (errorEl) {
+      errorEl.classList.remove('flex');
+      errorEl.classList.add('hidden');
+    }
   }
 
   openNewRepoModal() {
+    this.clearFieldError('new-repo-name', 'new-repo-name-error');
+    const nameInput = document.getElementById('new-repo-name');
+    const descInput = document.getElementById('new-repo-desc');
+    if (nameInput) nameInput.value = '';
+    if (descInput) descInput.value = '';
     document.getElementById('new-repo-modal')?.classList.remove('hidden');
+    setTimeout(() => nameInput?.focus(), 50);
   }
+
   closeNewRepoModal() {
+    this.clearFieldError('new-repo-name', 'new-repo-name-error');
     document.getElementById('new-repo-modal')?.classList.add('hidden');
   }
-  async submitNewRepo() {
-    const name = document.getElementById('new-repo-name').value.trim();
-    const description = document.getElementById('new-repo-desc').value.trim();
-    if (!name) return alert('Repository name is required');
 
-    const repo = await this.store.createRepository({
-      owner: 'user',
-      name,
-      description
-    });
-    this.closeNewRepoModal();
-    this.toast(`Repository 'user/${repo.name}' created!`);
-    this.navigate(`user/${repo.name}`);
+  async submitNewRepo() {
+    this.clearFieldError('new-repo-name', 'new-repo-name-error');
+    const nameInput = document.getElementById('new-repo-name');
+    const descInput = document.getElementById('new-repo-desc');
+    const name = (nameInput?.value || '').trim();
+    const description = (descInput?.value || '').trim();
+
+    if (!name) {
+      this.showFieldError('new-repo-name', 'new-repo-name-error', 'new-repo-name-error-text', 'Repository name is required. Please provide a repository name.');
+      return;
+    }
+
+    const validRepoNameRegex = /^[a-zA-Z0-9_.-]{1,100}$/;
+    if (!validRepoNameRegex.test(name)) {
+      this.showFieldError('new-repo-name', 'new-repo-name-error', 'new-repo-name-error-text', 'Repository name can only contain letters, numbers, hyphens (-), underscores (_), and periods (.). Spaces and special characters are not allowed.');
+      return;
+    }
+
+    if (name === '.' || name === '..' || name.toLowerCase().endsWith('.git')) {
+      this.showFieldError('new-repo-name', 'new-repo-name-error', 'new-repo-name-error-text', 'Repository name is reserved or cannot end in .git.');
+      return;
+    }
+
+    try {
+      const repo = await this.store.createRepository({
+        owner: 'user',
+        name,
+        description
+      });
+      this.closeNewRepoModal();
+      this.toast(`Repository 'user/${repo.name}' created!`);
+      this.navigate(`user/${repo.name}`);
+    } catch (err) {
+      this.showFieldError('new-repo-name', 'new-repo-name-error', 'new-repo-name-error-text', err.message);
+    }
   }
 
   openNewFileModal() {
-    document.getElementById('new-file-path').value = this.currentPath ? `${this.currentPath}/` : '';
-    document.getElementById('new-file-content').value = '';
-    document.getElementById('new-file-message').value = 'Add new file';
+    this.clearFieldError('new-file-path', 'new-file-path-error');
+    const pathInput = document.getElementById('new-file-path');
+    const contentInput = document.getElementById('new-file-content');
+    const messageInput = document.getElementById('new-file-message');
+    if (pathInput) pathInput.value = this.currentPath ? `${this.currentPath}/` : '';
+    if (contentInput) contentInput.value = '';
+    if (messageInput) messageInput.value = 'Add new file';
     document.getElementById('new-file-modal')?.classList.remove('hidden');
+    setTimeout(() => pathInput?.focus(), 50);
   }
+
   closeNewFileModal() {
+    this.clearFieldError('new-file-path', 'new-file-path-error');
     document.getElementById('new-file-modal')?.classList.add('hidden');
   }
+
   async submitNewFile() {
-    const path = document.getElementById('new-file-path').value.trim();
-    const content = document.getElementById('new-file-content').value;
-    const message = document.getElementById('new-file-message').value.trim();
-    if (!path) return alert('File path is required');
+    this.clearFieldError('new-file-path', 'new-file-path-error');
+    const pathInput = document.getElementById('new-file-path');
+    const contentInput = document.getElementById('new-file-content');
+    const messageInput = document.getElementById('new-file-message');
 
-    await this.git.commitFile({
-      repoId: this.activeRepo.id,
-      branch: this.currentBranch,
-      path,
-      content,
-      message
-    });
-    this.closeNewFileModal();
-    this.toast(`Committed ${path}!`);
+    const path = (pathInput?.value || '').trim();
+    const content = contentInput?.value || '';
+    const message = (messageInput?.value || '').trim();
 
-    // Auto-trigger client-side KDD Actions CI on push
-    if (window.actionsEngine) {
-      window.actionsEngine.runWorkflow({
-        repoId: this.activeRepo.id,
-        branch: this.currentBranch,
-        event: 'push',
-        commitMessage: message
-      }).then(() => {
-        this.updateTabCounts();
-      }).catch(err => console.error('[Actions] Push auto-trigger failed:', err));
+    if (!path) {
+      this.showFieldError('new-file-path', 'new-file-path-error', 'new-file-path-error-text', 'File path is required. Please provide a path for the file.');
+      return;
     }
 
-    this.navigatePath(path);
+    if (path.split(/[\/\\]/).some(p => p === '..')) {
+      this.showFieldError('new-file-path', 'new-file-path-error', 'new-file-path-error-text', 'Invalid file path: directory traversal ("..") is not allowed.');
+      return;
+    }
+
+    try {
+      await this.git.commitFile({
+        repoId: this.activeRepo.id,
+        branch: this.currentBranch,
+        path,
+        content,
+        message: message || `Add ${path}`
+      });
+      this.closeNewFileModal();
+      this.toast(`Committed ${path}!`);
+
+      // Auto-trigger client-side KDD Actions CI on push
+      if (window.actionsEngine) {
+        window.actionsEngine.runWorkflow({
+          repoId: this.activeRepo.id,
+          branch: this.currentBranch,
+          event: 'push',
+          commitMessage: message || `Add ${path}`
+        }).then(() => {
+          this.updateTabCounts();
+        }).catch(err => console.error('[Actions] Push auto-trigger failed:', err));
+      }
+
+      this.navigatePath(path);
+    } catch (err) {
+      this.showFieldError('new-file-path', 'new-file-path-error', 'new-file-path-error-text', err.message);
+    }
   }
 
   async openEditFileModal(path) {
+    this.clearFieldError('new-file-path', 'new-file-path-error');
     const file = await this.store.getFile(this.activeRepo.id, this.currentBranch, path);
     if (!file) return;
     document.getElementById('new-file-path').value = file.path;
@@ -1381,51 +1509,107 @@ class GitHubApp {
   }
 
   openNewIssueModal() {
+    this.clearFieldError('issue-title-input', 'issue-title-error');
+    const titleInput = document.getElementById('issue-title-input');
+    const bodyInput = document.getElementById('issue-body-input');
+    if (titleInput) titleInput.value = '';
+    if (bodyInput) bodyInput.value = '';
     document.getElementById('new-issue-modal')?.classList.remove('hidden');
+    setTimeout(() => titleInput?.focus(), 50);
   }
+
   closeNewIssueModal() {
+    this.clearFieldError('issue-title-input', 'issue-title-error');
     document.getElementById('new-issue-modal')?.classList.add('hidden');
   }
-  async submitNewIssue() {
-    const title = document.getElementById('issue-title-input').value.trim();
-    const body = document.getElementById('issue-body-input').value.trim();
-    if (!title) return alert('Title is required');
 
-    await this.store.createIssue({
-      repoId: this.activeRepo.id,
-      title,
-      body,
-      author: 'Current User'
-    });
-    this.closeNewIssueModal();
-    this.toast('Issue submitted!');
-    this.renderContentArea();
+  async submitNewIssue() {
+    this.clearFieldError('issue-title-input', 'issue-title-error');
+    const titleInput = document.getElementById('issue-title-input');
+    const bodyInput = document.getElementById('issue-body-input');
+    const title = (titleInput?.value || '').trim();
+    const body = (bodyInput?.value || '').trim();
+
+    if (!title) {
+      this.showFieldError('issue-title-input', 'issue-title-error', 'issue-title-error-text', 'Title is required. Please provide a descriptive title before submitting.');
+      return;
+    }
+
+    try {
+      await this.store.createIssue({
+        repoId: this.activeRepo.id,
+        title,
+        body,
+        author: 'Current User'
+      });
+      this.closeNewIssueModal();
+      this.toast('Issue submitted!');
+      this.renderContentArea();
+    } catch (err) {
+      this.showFieldError('issue-title-input', 'issue-title-error', 'issue-title-error-text', err.message);
+    }
   }
 
   openNewPrModal() {
+    this.clearFieldError('pr-title-input', 'pr-title-error');
+    this.clearFieldError('pr-source-select', 'pr-branch-error');
     const branchOptions = this.activeRepo.branches.map(b => `<option value="${b}">${b}</option>`).join('');
-    document.getElementById('pr-source-select').innerHTML = branchOptions;
+    const sourceSelect = document.getElementById('pr-source-select');
+    if (sourceSelect) sourceSelect.innerHTML = branchOptions;
+    const titleInput = document.getElementById('pr-title-input');
+    const bodyInput = document.getElementById('pr-body-input');
+    if (titleInput) titleInput.value = '';
+    if (bodyInput) bodyInput.value = '';
     document.getElementById('new-pr-modal')?.classList.remove('hidden');
+    setTimeout(() => titleInput?.focus(), 50);
   }
+
   closeNewPrModal() {
+    this.clearFieldError('pr-title-input', 'pr-title-error');
+    this.clearFieldError('pr-source-select', 'pr-branch-error');
     document.getElementById('new-pr-modal')?.classList.add('hidden');
   }
-  async submitNewPr() {
-    const title = document.getElementById('pr-title-input').value.trim();
-    const sourceBranch = document.getElementById('pr-source-select').value;
-    const body = document.getElementById('pr-body-input').value.trim();
-    if (!title) return alert('PR Title is required');
 
-    await this.store.createPullRequest({
-      repoId: this.activeRepo.id,
-      title,
-      body,
-      sourceBranch,
-      targetBranch: 'main'
-    });
-    this.closeNewPrModal();
-    this.toast('Pull Request opened!');
-    this.renderContentArea();
+  async submitNewPr() {
+    this.clearFieldError('pr-title-input', 'pr-title-error');
+    this.clearFieldError('pr-source-select', 'pr-branch-error');
+
+    const titleInput = document.getElementById('pr-title-input');
+    const sourceSelect = document.getElementById('pr-source-select');
+    const bodyInput = document.getElementById('pr-body-input');
+
+    const title = (titleInput?.value || '').trim();
+    const sourceBranch = sourceSelect?.value;
+    const targetBranch = 'main';
+    const body = (bodyInput?.value || '').trim();
+
+    let hasError = false;
+    if (sourceBranch === targetBranch) {
+      this.showFieldError('pr-source-select', 'pr-branch-error', 'pr-branch-error-text', `Head branch and base branch cannot be identical (${sourceBranch} -> ${targetBranch}). Choose a different branch.`);
+      hasError = true;
+    }
+
+    if (!title) {
+      this.showFieldError('pr-title-input', 'pr-title-error', 'pr-title-error-text', 'PR Title is required. Please provide a title.');
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    try {
+      await this.store.createPullRequest({
+        repoId: this.activeRepo.id,
+        title,
+        body,
+        sourceBranch,
+        targetBranch
+      });
+      this.closeNewPrModal();
+      this.toast('Pull Request opened!');
+      this.renderContentArea();
+    } catch (err) {
+      this.showFieldError('pr-title-input', 'pr-title-error', 'pr-title-error-text', err.message);
+    }
   }
 
   async viewPrDiff(prId) {
