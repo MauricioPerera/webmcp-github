@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub (Client-Side) &middot; KDD & WebMCP</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gh: {
+              bg: '#0d1117',
+              panel: '#161b22',
+              border: '#30363d',
+              borderSubtle: '#21262d',
+              text: '#c9d1d9',
+              textMuted: '#8b949e',
+              blue: '#58a6ff',
+              green: '#238636',
+              greenHover: '#2ea043'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- HTMX CDN -->
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+  <!-- Marked.js for Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Highlight.js for Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/custom.css" />
+</head>
+<body class="bg-[#0d1117] text-[#c9d1d9] min-h-screen flex flex-col antialiased" hx-ext="client-api">
+
+  <!-- ================= TOP GLOBAL NAVBAR ================= -->
+  <header class="bg-[#161b22] border-b border-[#30363d] sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      
+      <!-- Left: Logo & Repository Select -->
+      <div class="flex items-center gap-3">
+        <a href="#/MauricioPerera/KDD" class="text-white hover:opacity-80 transition flex items-center gap-2">
+          <!-- Authentic Octocat SVG -->
+          <svg class="w-8 h-8 fill-current" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          <span class="font-bold text-sm hidden sm:inline tracking-tight">GitHub <span class="text-xs text-blue-400 font-normal">Client-Side</span></span>
+        </a>
+
+        <a href="index.html" class="px-2 py-1 text-xs font-semibold bg-[#21262d] hover:bg-[#30363d] text-gray-300 border border-[#30363d] rounded-md transition flex items-center gap-1">
+          ← Landing
+        </a>
+
+        <!-- Repository Switcher Dropdown -->
+        <div class="relative">
+          <select id="global-repo-dropdown" onchange="app.handleRepoSelect(this.value)" class="bg-[#0d1117] text-gray-200 border border-[#30363d] rounded-md text-xs font-semibold px-2.5 py-1.5 focus:outline-none focus:border-blue-500 cursor-pointer">
+            <option value="">Loading repos...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Center: Global Search & Standards Links -->
+      <div class="hidden md:flex items-center gap-3 flex-1 max-w-md">
+        <div class="relative w-full">
+          <input type="text" placeholder="Type '/' to search repositories, contracts, or files..." class="w-full bg-[#0d1117] border border-[#30363d] rounded-md px-3 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+          <span class="absolute right-2 top-1 text-[10px] text-gray-500 border border-[#30363d] rounded px-1">/</span>
+        </div>
+      </div>
+
+      <!-- Right: Badges, Actions, Theme Toggle -->
+      <div class="flex items-center gap-2">
+        <!-- WebMCP Live Status & Playground Button -->
+        <button onclick="app.openWebMcpPlayground()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-cyan-950/60 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-700/50 rounded-md transition shadow-sm" title="Inspect WebMCP Tools">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+          </span>
+          <span id="webmcp-status-badge">WebMCP: 10 Tools</span>
+        </button>
+
+        <!-- KDD Methodology Link -->
+        <a href="https://github.com/MauricioPerera/KDD" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-700/40 rounded-md transition">
+          KDD Gate v1.0
+        </a>
+
+        <!-- New Repo Button -->
+        <button onclick="app.openNewRepoModal()" class="px-2.5 py-1 text-xs font-semibold bg-[#238636] hover:bg-[#2ea043] text-white rounded-md transition flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"></path></svg>
+          <span class="hidden sm:inline">New</span>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button onclick="app.toggleTheme()" class="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d] transition" id="theme-toggle-btn" title="Toggle Theme">
+          <span id="theme-icon">
+            <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path></svg>
+          </span>
+        </button>
+
+        <!-- User Avatar -->
+        <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xs ring-1 ring-[#30363d] cursor-pointer" title="Client User">
+          U
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= REPOSITORY SUBHEADER ================= -->
+  <div id="repo-header" class="bg-[#161b22]"></div>
+
+  <!-- ================= MAIN CONTENT VIEW ================= -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full" id="app-root">
+    <div id="content-area">
+      <div class="p-12 text-center text-gray-500 font-mono text-sm">
+        Initializing Client-Side Git Engine & WebMCP Provider...
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-[#161b22] border-t border-[#30363d] py-6 text-xs text-gray-500 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <svg class="w-5 h-5 fill-gray-500" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        <span>GitHub Client-Side Clone &middot; 100% Static GitHub Pages Ready</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="https://github.com/MauricioPerera/KDD" target="_blank" class="hover:text-blue-400">KDD Standard</a>
+        <a href="https://mauricioperera.github.io/fastwebmcp/" target="_blank" class="hover:text-blue-400">FastWebMCP</a>
+        <a href="https://webmcp.com" target="_blank" class="hover:text-blue-400">webmcp.com</a>
+        <button onclick="app.openWebMcpPlayground()" class="hover:text-cyan-400 font-semibold">WebMCP Agent Console</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= MODALS & OVERLAYS ================= -->
+
+  <!-- 1. WebMCP Playground Console Modal -->
+  <div id="webmcp-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-cyan-800/70 rounded-lg shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
+          <h3 class="font-bold text-white text-sm">WebMCP Agent Playground & Tool Inspector</h3>
+          <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded">webmcp.com standard</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="navigator.clipboard.writeText(JSON.stringify(app.webmcp.exportDirectorySchema(), null, 2)); app.toast('Exported WebMCP directory schema to clipboard!');" class="text-xs bg-[#21262d] hover:bg-[#30363d] text-cyan-300 border border-cyan-800 px-2.5 py-1 rounded">
+            Export Directory JSON
+          </button>
+          <button onclick="app.closeWebMcpPlayground()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Two-Column Layout) -->
+      <div class="flex-1 flex flex-col md:flex-row overflow-hidden divide-y md:divide-y-0 md:divide-x divide-[#30363d]">
+        <!-- Left: Tool Directory -->
+        <div class="w-full md:w-80 bg-[#0d1117]/50 p-3 overflow-y-auto space-y-2">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-gray-400 px-1">Registered Tools</div>
+          <div id="webmcp-tools-list" class="space-y-1.5"></div>
+        </div>
+
+        <!-- Right: Tool Inspector & Live Executor -->
+        <div class="flex-1 p-5 flex flex-col overflow-y-auto bg-[#0d1117] space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <h4 id="webmcp-selected-name" class="font-mono text-base font-bold text-cyan-300">Tool Name</h4>
+            </div>
+            <p id="webmcp-selected-desc" class="text-xs text-gray-400 mt-1">Tool description</p>
+          </div>
+
+          <!-- Input Schema Inspector -->
+          <div>
+            <span class="text-xs font-semibold text-gray-400 block mb-1">Input Schema (JSON Schema):</span>
+            <pre id="webmcp-schema-view" class="bg-[#161b22] border border-[#30363d] rounded p-2.5 text-[11px] font-mono text-gray-300 max-h-32 overflow-y-auto"></pre>
+          </div>
+
+          <!-- Arguments Input Area -->
+          <div class="flex-1 flex flex-col">
+            <span class="text-xs font-semibold text-gray-400 block mb-1">Arguments (JSON Payload):</span>
+            <textarea id="webmcp-input-args" rows="4" class="w-full bg-[#161b22] border border-[#30363d] rounded p-2.5 text-xs font-mono text-white focus:outline-none focus:border-cyan-500"></textarea>
+            
+            <div class="mt-2.5 flex justify-end">
+              <button onclick="app.executeSelectedWebMcpTool()" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2 rounded shadow transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Invoke Tool
+              </button>
+            </div>
+          </div>
+
+          <!-- Output Response Viewer -->
+          <div class="flex-1 flex flex-col">
+            <span class="text-xs font-semibold text-gray-400 block mb-1">Execution Response:</span>
+            <pre id="webmcp-output-view" class="flex-1 bg-[#161b22] border border-[#30363d] rounded p-3 text-xs font-mono text-emerald-400 overflow-y-auto min-h-[140px]">// Click "Invoke Tool" to run...</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Deterministic Audit Modal -->
+  <div id="audit-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-cyan-700/60 rounded-lg shadow-2xl w-full max-w-2xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 16 16" fill="currentColor"><path d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75z"></path></svg>
+          Deterministic CCDD Gate Results
+        </h3>
+        <button onclick="app.closeAuditModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div id="audit-modal-content" class="p-6"></div>
+    </div>
+  </div>
+
+  <!-- 3. New File / Edit File Modal -->
+  <div id="new-file-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm">Commit File to Repository</h3>
+        <button onclick="app.closeNewFileModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div class="p-5 space-y-4 flex-1 overflow-y-auto">
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">File Path (e.g. knowledge/contracts/task.md)</label>
+          <input id="new-file-path" type="text" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white font-mono" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">File Content</label>
+          <textarea id="new-file-content" rows="12" class="w-full bg-[#0d1117] border border-[#30363d] rounded p-3 text-xs font-mono text-white"></textarea>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Commit Message</label>
+          <input id="new-file-message" type="text" placeholder="Update file..." class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white" />
+        </div>
+      </div>
+      <div class="p-4 bg-[#0d1117] border-t border-[#30363d] flex justify-end gap-2">
+        <button onclick="app.closeNewFileModal()" class="px-3 py-1.5 text-xs font-semibold bg-[#21262d] text-gray-300 rounded border border-[#30363d]">Cancel</button>
+        <button onclick="app.submitNewFile()" class="px-4 py-1.5 text-xs font-semibold bg-[#238636] hover:bg-[#2ea043] text-white rounded">Commit changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. New Repository Modal -->
+  <div id="new-repo-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm">Create a new repository</h3>
+        <button onclick="app.closeNewRepoModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Repository name</label>
+          <input id="new-repo-name" type="text" placeholder="my-awesome-project" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Description (optional)</label>
+          <input id="new-repo-desc" type="text" placeholder="A client-side KDD project" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white" />
+        </div>
+      </div>
+      <div class="p-4 bg-[#0d1117] border-t border-[#30363d] flex justify-end gap-2">
+        <button onclick="app.closeNewRepoModal()" class="px-3 py-1.5 text-xs font-semibold bg-[#21262d] text-gray-300 rounded border border-[#30363d]">Cancel</button>
+        <button onclick="app.submitNewRepo()" class="px-4 py-1.5 text-xs font-semibold bg-[#238636] hover:bg-[#2ea043] text-white rounded">Create repository</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. New Issue Modal (With Declarative WebMCP annotations) -->
+  <div id="new-issue-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm">New Issue</h3>
+        <button onclick="app.closeNewIssueModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <form id="new-issue-form" onsubmit="event.preventDefault(); app.submitNewIssue();" class="p-5 space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Title</label>
+          <input id="issue-title-input" name="title" type="text" placeholder="Title" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white" required />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Leave a comment</label>
+          <textarea id="issue-body-input" name="body" rows="6" placeholder="Describe the problem or suggestion..." class="w-full bg-[#0d1117] border border-[#30363d] rounded p-3 text-xs text-white"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t border-[#30363d]">
+          <button type="button" onclick="app.closeNewIssueModal()" class="px-3 py-1.5 text-xs font-semibold bg-[#21262d] text-gray-300 rounded border border-[#30363d]">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-[#238636] hover:bg-[#2ea043] text-white rounded">Submit new issue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. New Pull Request Modal -->
+  <div id="new-pr-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm">Open a Pull Request</h3>
+        <button onclick="app.closeNewPrModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Compare Branch</label>
+          <select id="pr-source-select" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white"></select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">PR Title</label>
+          <input id="pr-title-input" type="text" placeholder="feat: implement changes" class="w-full bg-[#0d1117] border border-[#30363d] rounded px-3 py-1.5 text-xs text-white" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-gray-300 block mb-1">Description</label>
+          <textarea id="pr-body-input" rows="4" placeholder="Summary of changes..." class="w-full bg-[#0d1117] border border-[#30363d] rounded p-3 text-xs text-white"></textarea>
+        </div>
+      </div>
+      <div class="p-4 bg-[#0d1117] border-t border-[#30363d] flex justify-end gap-2">
+        <button onclick="app.closeNewPrModal()" class="px-3 py-1.5 text-xs font-semibold bg-[#21262d] text-gray-300 rounded border border-[#30363d]">Cancel</button>
+        <button onclick="app.submitNewPr()" class="px-4 py-1.5 text-xs font-semibold bg-[#238636] hover:bg-[#2ea043] text-white rounded">Create pull request</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. PR Diff Viewer Modal -->
+  <div id="pr-diff-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-blue-400" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M7.177 3.073L9.573.677A.25.25 0 0110 .854v4.792a.25.25 0 01-.427.177L7.177 3.427a.25.25 0 010-.354z"></path></svg>
+          Pull Request Changes (Visual Diff)
+        </h3>
+        <button onclick="app.closePrDiffModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div id="pr-diff-content" class="p-6 overflow-y-auto flex-1"></div>
+    </div>
+  </div>
+
+  <!-- 8. Clone Repo Modal -->
+  <div id="clone-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-[#30363d] rounded-lg shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm">Clone Repository</h3>
+        <button onclick="app.closeCloneModal()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <div>
+          <span class="font-semibold text-gray-300 block mb-1">Clone with HTTPS:</span>
+          <div class="flex items-center gap-2">
+            <input id="clone-url-input" readonly class="flex-1 bg-[#0d1117] border border-[#30363d] rounded px-2.5 py-1.5 font-mono text-gray-300 text-xs select-all" />
+            <button onclick="app.copyCloneUrl()" class="px-3 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-white border border-[#30363d] rounded font-semibold">Copy</button>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-[#30363d]">
+          <span class="font-semibold text-gray-300 block mb-1">AI Browser Agent (WebMCP):</span>
+          <p class="text-gray-400">Agents with WebMCP support can directly read and write to this repo via <code class="text-cyan-400">document.modelContext</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script src="js/store.js"></script>
+  <script src="js/git-engine.js"></script>
+  <script src="js/kdd-engine.js"></script>
+  <script src="js/webmcp-provider.js"></script>
+  <script src="js/htmx-bridge.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

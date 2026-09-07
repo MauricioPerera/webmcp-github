@@ -1,0 +1,262 @@
+{
+  "repositories": [
+    {
+      "id": "repo-1",
+      "owner": "MauricioPerera",
+      "name": "KDD",
+      "description": "Knowledge-Driven Development (KDD): Govern AI agents with deterministic gates. OKF + CCDD methodology.",
+      "defaultBranch": "main",
+      "isPrivate": false,
+      "stars": 412,
+      "forks": 58,
+      "watchers": 34,
+      "branches": ["main", "feature/observability-gate"],
+      "createdAt": "2025-01-15T10:00:00Z",
+      "updatedAt": "2026-09-06T18:30:00Z"
+    },
+    {
+      "id": "repo-2",
+      "owner": "MauricioPerera",
+      "name": "fastwebmcp",
+      "description": "FastMCP-style ergonomics for WebMCP: typed Zod builders over the browser's Imperative and Declarative APIs.",
+      "defaultBranch": "main",
+      "isPrivate": false,
+      "stars": 289,
+      "forks": 31,
+      "watchers": 19,
+      "branches": ["main", "v0.4.2"],
+      "createdAt": "2025-02-10T12:00:00Z",
+      "updatedAt": "2026-09-05T20:15:00Z"
+    },
+    {
+      "id": "repo-3",
+      "owner": "octocat",
+      "name": "Hello-World",
+      "description": "My first repository on GitHub!",
+      "defaultBranch": "main",
+      "isPrivate": false,
+      "stars": 2510,
+      "forks": 1820,
+      "watchers": 430,
+      "branches": ["main"],
+      "createdAt": "2024-05-01T08:00:00Z",
+      "updatedAt": "2026-08-20T14:00:00Z"
+    }
+  ],
+  "files": [
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "README.md",
+      "content": "# KDD (Knowledge-Driven Development)\n\n[![validate-contracts](https://github.com/MauricioPerera/KDD/actions/workflows/validate.yml/badge.svg)](https://github.com/MauricioPerera/KDD/actions/workflows/validate.yml)\n\nKnowledge-Driven Development (KDD) unifies:\n- **OKF (Open Knowledge Format):** Minimalist format for structuring knowledge, design, and architecture as markdown files with YAML frontmatter.\n- **CCDD (Contract-Driven Development):** Governs development with ephemeral AI agents through strict contracts, frozen tests, and deterministic complexity thresholds.\n\n### Repository Structure\n- `knowledge/`: Where your OKF knowledge base lives. Every file is an indexable node.\n- `knowledge/contracts/`: Where tasks for developers (human or AI) are defined using hybrid OKF+CCDD.\n- `src/` and `tests/`: Implementation code and frozen test oracles.\n- `scripts/validate_contracts.py`: Deterministic contract validator.\n\n### WebMCP Integration\nThis repository is connected to **FastWebMCP** and **KDD-Board**, exposing tools directly to AI browser agents according to the WebMCP standard (`webmcp.com`).\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "knowledge/OKF-SPEC.md",
+      "content": "---\ntype: 'Standard'\ntitle: 'OKF Specification v1.0'\ndescription: 'Open Knowledge Format Specification'\ntags: ['okf', 'spec', 'kdd']\n---\n\n# Open Knowledge Format (OKF)\n\nAn OKF node is a Markdown document with strict YAML frontmatter.\n\n## Mandatory Frontmatter Fields:\n- `type`: Category of the node (e.g., 'Task Contract', 'Architecture', 'Data Model')\n- `title`: Human-readable title\n- `description`: Concise summary\n- `tags`: List of searchable categorization tags\n\n## Cross-References\nNodes MUST reference other nodes via standard relative Markdown links (e.g., `[Users Model](../data_models/users.md)`).\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "knowledge/contracts/implementar_verify_user.md",
+      "content": "---\ntype: 'Task Contract'\ntitle: 'Implementar verify_user'\ndescription: 'Función pura para validación de formato y autenticidad de ID de usuario.'\ntags: ['ccdd', 'auth', 'kdd']\n\ntask: verify_user\nintent: 'Implementar la función de validación de identificadores de usuario con chequeo de longitud y checksum.'\ntarget: src/verify_user.py\nsignature: 'def verify_user(user_id: str) -> bool:'\ntest_command: 'python -m unittest tests/test_verify_user.py'\nbudget:\n  max_cyclomatic_complexity: 4\ntests: tests/test_verify_user.py\ndeps_allowed:\n  - re\n  - hashlib\n---\n\n# Contract: verify_user\n\n## Intent\nValidar que el `user_id` cumpla con la especificación definida en [OKF-SPEC.md](../OKF-SPEC.md).\n\n## Constraints\n- Debe ser una función pura sin efectos secundarios.\n- La complejidad ciclomática no debe exceder 4.\n- No se permite el uso de dependencias externas fuera de `deps_allowed`.\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "knowledge/contracts/observability_gate.md",
+      "content": "---\ntype: 'Task Contract'\ntitle: 'Implementar observability_gate'\ndescription: 'Validador de presencia de logs y trazas en operaciones críticas.'\ntags: ['ccdd', 'observability', 'kdd']\n\ntask: observability_gate\nintent: 'Asegurar que cada ruta crítica emita un evento de telemetría estructurado.'\ntarget: src/observability.py\nsignature: 'def check_telemetry(action_name: str, payload: dict) -> bool:'\ntest_command: 'python -m unittest tests/test_observability.py'\nbudget:\n  max_cyclomatic_complexity: 3\ntests: tests/test_observability.py\ndeps_allowed:\n  - json\n---\n\n# Contract: observability_gate\n\nVerifica trazabilidad determinista según [OKF-SPEC.md](../OKF-SPEC.md).\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "src/verify_user.py",
+      "content": "import re\nimport hashlib\n\ndef verify_user(user_id: str) -> bool:\n    \"\"\"Verifica que el user_id tenga formato alfanumérico válido y longitud adecuada.\"\"\"\n    if not isinstance(user_id, str):\n        return False\n    if not (6 <= len(user_id) <= 32):\n        return False\n    return bool(re.match(r'^[a-zA-Z0-9_-]+$', user_id))\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "tests/test_verify_user.py",
+      "content": "import unittest\nfrom src.verify_user import verify_user\n\nclass TestVerifyUser(unittest.TestCase):\n    def test_valid_user(self):\n        self.assertTrue(verify_user(\"mauricio_123\"))\n        self.assertTrue(verify_user(\"user-valid\"))\n\n    def test_invalid_length(self):\n        self.assertFalse(verify_user(\"usr\"))\n        self.assertFalse(verify_user(\"a\" * 33))\n\n    def test_invalid_characters(self):\n        self.assertFalse(verify_user(\"user@domain\"))\n        self.assertFalse(verify_user(\"user name\"))\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    {
+      "repoId": "repo-1",
+      "branch": "main",
+      "path": "scripts/validate_contracts.py",
+      "content": "#!/usr/bin/env python3\n\"\"\"\nDeterministic Contract Validator for KDD.\nValidates YAML frontmatter, cyclomatic complexity budget, and dependencies.\n\"\"\"\nimport sys\nimport os\n\ndef main():\n    print(\"Deterministic Gate: All contracts in knowledge/contracts/ are valid.\")\n    return 0\n\nif __name__ == '__main__':\n    sys.exit(main())\n"
+    },
+    {
+      "repoId": "repo-2",
+      "branch": "main",
+      "path": "README.md",
+      "content": "# fastwebmcp\n\n[![npm](https://img.shields.io/npm/v/fastwebmcp)](https://www.npmjs.com/package/fastwebmcp)\n\nFastMCP-style ergonomics for [WebMCP](https://webmcp.com): typed Zod builders over the browser's Imperative and Declarative APIs.\n\n## Quick Start\n\n```ts\nimport { z } from 'zod';\nimport { registerTool } from 'fastwebmcp';\n\nregisterTool({\n  name: 'add_todo',\n  description: 'Add a todo item to the list.',\n  inputSchema: z.object({ text: z.string().min(1) }),\n  execute: async ({ text }) => {\n    return `Added: ${text}`;\n  },\n});\n```\n\n## Declarative API\n\n```html\n<form toolname=\"submit_support\" tooldescription=\"Submit support ticket\">\n  <input name=\"subject\" toolparamdescription=\"Ticket subject\" />\n  <button type=\"submit\">Send</button>\n</form>\n```\n"
+    },
+    {
+      "repoId": "repo-2",
+      "branch": "main",
+      "path": "package.json",
+      "content": "{\n  \"name\": \"fastwebmcp\",\n  \"version\": \"0.4.2\",\n  \"description\": \"FastMCP-style ergonomics for WebMCP\",\n  \"main\": \"dist/index.js\",\n  \"types\": \"dist/index.d.ts\",\n  \"scripts\": {\n    \"build\": \"tsup src/index.ts --format cjs,esm --dts\",\n    \"test\": \"vitest run\"\n  },\n  \"keywords\": [\"webmcp\", \"mcp\", \"ai-agent\", \"browser-tools\"],\n  \"author\": \"Mauricio Perera\",\n  \"license\": \"MIT\"\n}\n"
+    },
+    {
+      "repoId": "repo-2",
+      "branch": "main",
+      "path": "src/index.ts",
+      "content": "export function registerTool(config: any) {\n  if (typeof window !== 'undefined' && (window as any).document?.modelContext) {\n    return (window as any).document.modelContext.registerTool(config);\n  }\n  console.warn('[fastwebmcp] document.modelContext not available. Running fallback mock.');\n  return config;\n}\n"
+    },
+    {
+      "repoId": "repo-3",
+      "branch": "main",
+      "path": "README.md",
+      "content": "# Hello World\n\nHello World is a starter repository for learning Git and GitHub.\n\n- Quick\n- Simple\n- Client-side ready\n"
+    }
+  ],
+  "commits": [
+    {
+      "id": "c1a9f02",
+      "repoId": "repo-1",
+      "branch": "main",
+      "message": "feat: initialize KDD structure with OKF and CCDD contracts",
+      "author": "Mauricio Perera <mauricio@example.com>",
+      "timestamp": "2026-09-05T14:22:00Z"
+    },
+    {
+      "id": "b8e42d1",
+      "repoId": "repo-1",
+      "branch": "main",
+      "message": "chore: add frozen test for verify_user contract",
+      "author": "Mauricio Perera <mauricio@example.com>",
+      "timestamp": "2026-09-06T09:10:00Z"
+    },
+    {
+      "id": "e4f8812",
+      "repoId": "repo-2",
+      "branch": "main",
+      "message": "release: fastwebmcp v0.4.2 with declarative support",
+      "author": "Mauricio Perera <mauricio@example.com>",
+      "timestamp": "2026-09-05T18:00:00Z"
+    },
+    {
+      "id": "a1b2c3d",
+      "repoId": "repo-3",
+      "branch": "main",
+      "message": "Initial commit",
+      "author": "octocat <octocat@github.com>",
+      "timestamp": "2024-05-01T08:00:00Z"
+    }
+  ],
+  "issues": [
+    {
+      "id": "issue-1",
+      "repoId": "repo-1",
+      "number": 1,
+      "title": "Add deterministic linting for OKF links",
+      "body": "We need to ensure that every contract only references existing OKF nodes rather than duplicating verbal business rules.\n\nRefer to `knowledge/OKF-SPEC.md` for normative specs.",
+      "state": "open",
+      "author": "MauricioPerera",
+      "labels": ["kdd", "enhancement", "gate"],
+      "commentsCount": 2,
+      "createdAt": "2026-09-06T11:00:00Z"
+    },
+    {
+      "id": "issue-2",
+      "repoId": "repo-1",
+      "number": 2,
+      "title": "Observability gate: verify telemetry JSON schema",
+      "body": "Implement contract check for logging/alerting/tracing gap findings as described in Capa 3.",
+      "state": "open",
+      "author": "ai-agent-glm",
+      "labels": ["ccdd", "observability"],
+      "commentsCount": 1,
+      "createdAt": "2026-09-06T15:20:00Z"
+    },
+    {
+      "id": "issue-3",
+      "repoId": "repo-2",
+      "number": 1,
+      "title": "Support W3C WebMCP Declarative Form Submission Event",
+      "body": "Add handler for agent submit events using respondToAgentSubmit.",
+      "state": "closed",
+      "author": "browser-dev",
+      "labels": ["webmcp", "declarative"],
+      "commentsCount": 4,
+      "createdAt": "2026-09-04T08:45:00Z"
+    }
+  ],
+  "pullRequests": [
+    {
+      "id": "pr-1",
+      "repoId": "repo-1",
+      "number": 3,
+      "title": "feat: implement verify_user with checksum validation",
+      "body": "Resolves contract `knowledge/contracts/implementar_verify_user.md`.\n\nAll frozen unit tests pass and complexity is 3 (budget: 4).",
+      "state": "open",
+      "author": "ephemeral-dev-1",
+      "sourceBranch": "feature/verify-user",
+      "targetBranch": "main",
+      "createdAt": "2026-09-06T16:00:00Z"
+    }
+  ],
+  "kddBoard": [
+    {
+      "id": "card-1",
+      "repoId": "repo-1",
+      "task": "verify_user",
+      "contractPath": "knowledge/contracts/implementar_verify_user.md",
+      "title": "Implementar verify_user",
+      "column": "in_progress",
+      "assignedAgent": "glm-5.3-flash:cloud",
+      "gateStatus": "passed",
+      "complexity": 3,
+      "maxComplexity": 4
+    },
+    {
+      "id": "card-2",
+      "repoId": "repo-1",
+      "task": "observability_gate",
+      "contractPath": "knowledge/contracts/observability_gate.md",
+      "title": "Implementar observability_gate",
+      "column": "ready",
+      "assignedAgent": "unassigned",
+      "gateStatus": "pending",
+      "complexity": 0,
+      "maxComplexity": 3
+    },
+    {
+      "id": "card-3",
+      "repoId": "repo-1",
+      "task": "compliance_scan",
+      "contractPath": "knowledge/contracts/compliance_findings.md",
+      "title": "Escanear licencias de dependencias",
+      "column": "backlog",
+      "assignedAgent": "unassigned",
+      "gateStatus": "pending",
+      "complexity": 0,
+      "maxComplexity": 5
+    },
+    {
+      "id": "card-4",
+      "repoId": "repo-1",
+      "task": "security_perimeter",
+      "contractPath": "knowledge/contracts/security_findings.md",
+      "title": "Auditoría de perímetro seguro (Capa 3)",
+      "column": "needs_human_input",
+      "assignedAgent": "sec-agent-3",
+      "gateStatus": "action_required",
+      "complexity": 4,
+      "maxComplexity": 4
+    },
+    {
+      "id": "card-5",
+      "repoId": "repo-1",
+      "task": "init_okf_spec",
+      "contractPath": "knowledge/OKF-SPEC.md",
+      "title": "Especificación Normativa OKF v1.0",
+      "column": "done",
+      "assignedAgent": "MauricioPerera",
+      "gateStatus": "passed",
+      "complexity": 1,
+      "maxComplexity": 2
+    }
+  ]
+}

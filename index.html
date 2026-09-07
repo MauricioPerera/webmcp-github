@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Client-Side &middot; KDD & WebMCP Platform</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gh: {
+              bg: '#0d1117',
+              panel: '#161b22',
+              border: '#30363d',
+              borderSubtle: '#21262d',
+              text: '#c9d1d9',
+              textMuted: '#8b949e',
+              blue: '#58a6ff',
+              green: '#238636',
+              greenHover: '#2ea043'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Marked.js and Highlight.js for interactive previews -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <link rel="stylesheet" href="css/custom.css" />
+</head>
+<body class="bg-[#0d1117] text-[#c9d1d9] min-h-screen flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- ================= TOP NAVIGATION ================= -->
+  <header class="bg-[#161b22]/90 backdrop-blur-md border-b border-[#30363d] sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <a href="index.html" class="flex items-center gap-2.5 text-white hover:opacity-90 transition">
+        <svg class="w-8 h-8 fill-current" viewBox="0 0 16 16">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+        </svg>
+        <div>
+          <span class="font-bold text-base tracking-tight text-white block leading-none">GitHub <span class="text-blue-400 font-medium">Client-Side</span></span>
+          <span class="text-[10px] text-gray-400 font-mono">KDD &middot; WebMCP &middot; Tailwind &middot; HTMX</span>
+        </div>
+      </a>
+
+      <!-- Navigation Links -->
+      <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-gray-300">
+        <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#kdd" class="hover:text-emerald-400 transition">KDD Methodology</a>
+        <a href="#webmcp" class="hover:text-cyan-400 transition">WebMCP Standard</a>
+        <a href="#deploy" class="hover:text-blue-400 transition">Deploy with gh</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <button onclick="openMcpInspector()" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/50 rounded-md transition shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          WebMCP (10 Tools)
+        </button>
+
+        <a href="app.html" class="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-[#238636] hover:bg-[#2ea043] text-white rounded-md transition shadow-md hover:shadow-green-900/30">
+          <span>Launch Web App</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO SECTION ================= -->
+  <section class="relative pt-16 pb-20 overflow-hidden border-b border-[#30363d] bg-gradient-to-b from-[#161b22] via-[#0d1117] to-[#0d1117]">
+    <!-- Ambient glowing backdrop -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-tr from-blue-600/10 via-emerald-600/10 to-cyan-500/10 blur-3xl pointer-events-none -z-10"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+      
+      <!-- Pill Badge -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#21262d] border border-[#30363d] text-xs text-gray-300 mb-6 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>100% Client-Side &middot; Zero Backend &middot; GitHub Pages Native</span>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-[1.1] max-w-4xl mx-auto">
+        The Full GitHub Experience. <br class="hidden sm:inline" />
+        <span class="bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400 bg-clip-text text-transparent">100% inside your browser.</span>
+      </h1>
+
+      <!-- Subheadline -->
+      <p class="mt-6 text-base sm:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+        A static, fully functional GitHub clone governed by <strong class="text-emerald-400 font-semibold">Knowledge-Driven Development (KDD)</strong> and wired with <strong class="text-cyan-400 font-semibold">FastWebMCP</strong> so autonomous AI browser agents can inspect, code, and commit via <code class="text-cyan-300 font-mono bg-[#161b22] px-1.5 py-0.5 rounded border border-[#30363d]">document.modelContext</code>.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+        <a href="app.html" class="px-6 py-3 bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-green-900/40 transition flex items-center gap-2">
+          <span>Abrir Clon de GitHub</span>
+          <svg class="w-4 h-4" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M1 8a7 7 0 1014 0A7 7 0 001 8zm10.22.22l-3.5 3.5a.75.75 0 01-1.06-1.06L8.94 8.5H4.75a.75.75 0 010-1.5h4.19L6.66 4.84a.75.75 0 011.06-1.06l3.5 3.5a.75.75 0 010 1.06z"></path></svg>
+        </a>
+        
+        <button onclick="openMcpInspector()" class="px-5 py-3 bg-[#21262d] hover:bg-[#30363d] text-cyan-300 text-sm font-semibold rounded-lg border border-cyan-800/60 transition flex items-center gap-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          Probar WebMCP Playground
+        </button>
+
+        <a href="https://github.com/MauricioPerera/KDD" target="_blank" class="px-5 py-3 bg-[#21262d] hover:bg-[#30363d] text-gray-300 text-sm font-semibold rounded-lg border border-[#30363d] transition flex items-center gap-2">
+          <svg class="w-4 h-4" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          Repo KDD
+        </a>
+      </div>
+
+      <!-- Real Preview Window Frame -->
+      <div class="mt-14 max-w-5xl mx-auto rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl overflow-hidden text-left">
+        <!-- Mock window bar -->
+        <div class="px-4 py-3 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500/80 inline-block"></span>
+            <span class="ml-2 font-mono text-xs text-gray-400">MauricioPerera/KDD &middot; main &middot; Client-Side Sandbox</span>
+          </div>
+          <a href="app.html" class="text-xs text-blue-400 hover:underline font-mono flex items-center gap-1">
+            Open full interface &#8599;
+          </a>
+        </div>
+
+        <!-- Embedded Interactive Preview Tabs -->
+        <div class="p-6 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Card 1: KDD Board -->
+            <div class="bg-[#0d1117] border border-emerald-800/40 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">KDD-Board (Kanban)</span>
+                <span class="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">5 Stages</span>
+              </div>
+              <p class="text-xs text-gray-400">Orchestrate ephemeral agents across Backlog, Ready, In Progress, Needs Human Input, and Done.</p>
+              <div class="bg-[#161b22] rounded p-2 text-[11px] font-mono border border-[#30363d] space-y-1">
+                <div class="flex justify-between text-gray-300">
+                  <span>task: verify_user</span>
+                  <span class="text-emerald-400 font-bold">PASSED</span>
+                </div>
+                <div class="text-gray-500 text-[10px]">Agent: glm-5.3-flash:cloud &middot; Comp: 3/4</div>
+              </div>
+            </div>
+
+            <!-- Card 2: Deterministic Gate -->
+            <div class="bg-[#0d1117] border border-cyan-800/40 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Deterministic Gate</span>
+                <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800">Zero Hallucinations</span>
+              </div>
+              <p class="text-xs text-gray-400">Validates YAML frontmatter, cyclomatic complexity budget, and frozen test oracle integrity in pure JS.</p>
+              <div class="bg-[#161b22] rounded p-2 text-[11px] font-mono border border-[#30363d] text-cyan-300 space-y-1">
+                <div>✓ OKF Frontmatter: PASS</div>
+                <div>✓ Complexity Budget: 3 &le; 4</div>
+              </div>
+            </div>
+
+            <!-- Card 3: WebMCP Protocol -->
+            <div class="bg-[#0d1117] border border-blue-800/40 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">WebMCP Engine</span>
+                <span class="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded border border-blue-800">webmcp.com</span>
+              </div>
+              <p class="text-xs text-gray-400">10 tools registered natively on <code class="text-blue-300">document.modelContext</code> for AI browser agents.</p>
+              <div class="bg-[#161b22] rounded p-2 text-[11px] font-mono border border-[#30363d] text-gray-300 space-y-1">
+                <div>list_repositories()</div>
+                <div>create_or_update_file()</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= STATS BAR ================= -->
+  <section class="py-8 bg-[#161b22] border-b border-[#30363d]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div>
+          <div class="text-3xl font-extrabold text-white">10</div>
+          <div class="text-xs text-gray-400 font-mono mt-1">Herramientas WebMCP</div>
+        </div>
+        <div>
+          <div class="text-3xl font-extrabold text-emerald-400">5 Etapas</div>
+          <div class="text-xs text-gray-400 font-mono mt-1">Tablero KDD Kanban</div>
+        </div>
+        <div>
+          <div class="text-3xl font-extrabold text-cyan-400">0 Backend</div>
+          <div class="text-xs text-gray-400 font-mono mt-1">100% Client-Side</div>
+        </div>
+        <div>
+          <div class="text-3xl font-extrabold text-yellow-400">90 / 90</div>
+          <div class="text-xs text-gray-400 font-mono mt-1">Tests E2E Aprobados</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 4 PILLARS SECTION ================= -->
+  <section id="features" class="py-20 border-b border-[#30363d]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold text-blue-400 uppercase tracking-widest font-mono">Arquitectura Moderna</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2">Los 4 Pilares del Clon de GitHub</h2>
+        <p class="text-gray-400 text-sm mt-3">Combinando diseño Primer de GitHub, rendimiento estático ultrarrápido, contratos deterministas y estándares de agentes de IA.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        
+        <!-- Pillar 1 -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-6 space-y-4 hover:border-blue-500 transition">
+          <div class="w-10 h-10 rounded-lg bg-blue-950 border border-blue-800 flex items-center justify-center text-blue-400">
+            <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8z"></path></svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">1. Motor Git Virtual y Persistencia Total</h3>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            Almacena repositorios, ramas, archivos y commits directamente en el navegador del cliente mediante IndexedDB con fallback automático a localStorage. Cuenta con un comparador de diferencias línea por línea (+ verde / - rojo) y soporte para Forks y Stars.
+          </p>
+          <ul class="text-xs text-gray-300 font-mono space-y-1.5 pt-2">
+            <li class="flex items-center gap-2"><span class="text-blue-400">&bull;</span> Árbol de archivos jerárquico con breadcrumbs</li>
+            <li class="flex items-center gap-2"><span class="text-blue-400">&bull;</span> Diff viewer visual línea por línea</li>
+            <li class="flex items-center gap-2"><span class="text-blue-400">&bull;</span> Respaldo y restauración JSON instantánea</li>
+          </ul>
+        </div>
+
+        <!-- Pillar 2 -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-6 space-y-4 hover:border-emerald-500 transition">
+          <div class="w-10 h-10 rounded-lg bg-emerald-950 border border-emerald-800 flex items-center justify-center text-emerald-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">2. Tailwind CSS & HTMX Declarativo</h3>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            Interfaz pixel-perfect idéntica a GitHub Dark Primer (`#0d1117`) y conmutador a modo claro. Emplea HTMX para swaps y transiciones reactivas de pestañas y modales sin necesidad de compilar frameworks pesados como React o Vue.
+          </p>
+          <ul class="text-xs text-gray-300 font-mono space-y-1.5 pt-2">
+            <li class="flex items-center gap-2"><span class="text-emerald-400">&bull;</span> 100% código estático nativo sin bundlers</li>
+            <li class="flex items-center gap-2"><span class="text-emerald-400">&bull;</span> Soporte de enrutamiento SPA con 404.html</li>
+            <li class="flex items-center gap-2"><span class="text-emerald-400">&bull;</span> Resaltado sintáctico con Highlight.js</li>
+          </ul>
+        </div>
+
+        <!-- Pillar 3 -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-6 space-y-4 hover:border-cyan-500 transition" id="kdd">
+          <div class="w-10 h-10 rounded-lg bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400">
+            <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor"><path d="M0 2.75C0 1.784.784 1 1.75 1h12.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0114.25 15H1.75A1.75 1.75 0 010 13.25V2.75z"></path></svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">3. Knowledge-Driven Development (KDD)</h3>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            Implementa la metodología de Mauricio Perera que unifica OKF (Open Knowledge Format en Markdown) con CCDD (Contract-Driven Development). Controla determinísticamente a los agentes de IA evaluando presupuestos de complejidad y oráculos de prueba congelados.
+          </p>
+          <ul class="text-xs text-gray-300 font-mono space-y-1.5 pt-2">
+            <li class="flex items-center gap-2"><span class="text-cyan-400">&bull;</span> Validador de complejidad ciclomática en vivo</li>
+            <li class="flex items-center gap-2"><span class="text-cyan-400">&bull;</span> Detección de oráculos de prueba y perímetros</li>
+            <li class="flex items-center gap-2"><span class="text-cyan-400">&bull;</span> Tablero Kanban KDD-Board de 5 etapas</li>
+          </ul>
+        </div>
+
+        <!-- Pillar 4 -->
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-6 space-y-4 hover:border-purple-500 transition" id="webmcp">
+          <div class="w-10 h-10 rounded-lg bg-purple-950 border border-purple-800 flex items-center justify-center text-purple-400">
+            <svg class="w-5 h-5" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M11.75 2.5a.75.75 0 100 1.5.75.75 0 000-1.5zm-2.25.75a2.25 2.25 0 113 2.122V6A2.5 2.5 0 0110 8.5H6a1 1 0 00-1 1v1.128a2.251 2.251 0 11-1.5 0V5.372a2.25 2.25 0 111.5 0v1.836A2.492 2.492 0 016 7h4a1 1 0 001-1v-.628A2.25 2.25 0 019.5 3.25z"></path></svg>
+          </div>
+          <h3 class="text-lg font-bold text-white">4. FastWebMCP & Estándar webmcp.com</h3>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            Exposición nativa de 10 herramientas MCP en el objeto global <code class="text-purple-300">document.modelContext</code>. Permite que navegadores con WebMCP o agentes de IA interactúen con el repositorio a través de APIs imperativas y declarativas.
+          </p>
+          <ul class="text-xs text-gray-300 font-mono space-y-1.5 pt-2">
+            <li class="flex items-center gap-2"><span class="text-purple-400">&bull;</span> Playground interactivo de invocación para agentes</li>
+            <li class="flex items-center gap-2"><span class="text-purple-400">&bull;</span> Atributos declarativos toolname en formularios</li>
+            <li class="flex items-center gap-2"><span class="text-purple-400">&bull;</span> Exportación compatible con webmcp.com</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WEBMCP TOOLS DIRECTORY ================= -->
+  <section class="py-20 border-b border-[#30363d] bg-[#0d1117]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+        <div>
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest font-mono">Directorio WebMCP</span>
+          <h2 class="text-3xl font-extrabold text-white mt-1">10 Herramientas Nativas para Agentes</h2>
+          <p class="text-gray-400 text-xs mt-1">Disponibles en el runtime del navegador para cualquier agente que soporte la especificación WebMCP.</p>
+        </div>
+        <button onclick="openMcpInspector()" class="px-4 py-2 bg-cyan-900/40 hover:bg-cyan-800/60 text-cyan-300 border border-cyan-700/50 rounded-md text-xs font-bold transition flex items-center gap-2 shrink-0">
+          <span>Abrir Consola Playground</span>
+          &#8599;
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs">
+        
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">list_repositories</span>
+            <span class="text-[10px] bg-blue-950 text-blue-300 px-1.5 rounded">read-only</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Lista todos los repositorios disponibles en el almacenamiento cliente.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">get_repository</span>
+            <span class="text-[10px] bg-blue-950 text-blue-300 px-1.5 rounded">read-only</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Obtiene ramas, descripción y estrellas de un repositorio.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">get_file</span>
+            <span class="text-[10px] bg-blue-950 text-blue-300 px-1.5 rounded">read-only</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Lee el contenido de un archivo en una ruta y rama específica.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">create_or_update_file</span>
+            <span class="text-[10px] bg-amber-950 text-amber-300 px-1.5 rounded">mutating</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Realiza un commit con cambios a un archivo en la rama indicada.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">list_issues</span>
+            <span class="text-[10px] bg-blue-950 text-blue-300 px-1.5 rounded">read-only</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Lista incidencias filtradas por estado (open, closed, all).</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">create_issue</span>
+            <span class="text-[10px] bg-amber-950 text-amber-300 px-1.5 rounded">mutating</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Publica una nueva incidencia con título, descripción y etiquetas.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">create_pull_request</span>
+            <span class="text-[10px] bg-amber-950 text-amber-300 px-1.5 rounded">mutating</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Abre un Pull Request comparando rama origen y destino.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">validate_kdd_contract</span>
+            <span class="text-[10px] bg-blue-950 text-blue-300 px-1.5 rounded">read-only</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Ejecuta la validación determinista de un contrato CCDD en el navegador.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">get_kdd_board</span>
+            <span class="text-[10px] bg-blue-950 text-blue-300 px-1.5 rounded">read-only</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Obtiene las columnas y tarjetas de tareas del tablero Kanban.</p>
+        </div>
+
+        <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-cyan-300">update_kdd_task</span>
+            <span class="text-[10px] bg-amber-950 text-amber-300 px-1.5 rounded">mutating</span>
+          </div>
+          <p class="text-gray-400 font-sans text-xs">Actualiza la etapa de una tarjeta o la asignación de un agente.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DEPLOY WITH GH CLI ================= -->
+  <section id="deploy" class="py-20 border-b border-[#30363d] bg-[#161b22]">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-10">
+        <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono">Despliegue Inmediato</span>
+        <h2 class="text-3xl font-extrabold text-white mt-1">Publica en GitHub Pages usando GitHub CLI (gh)</h2>
+        <p class="text-gray-400 text-xs mt-2">Sube este clon a tu cuenta de GitHub y tenlo online en menos de 60 segundos.</p>
+      </div>
+
+      <div class="bg-[#0d1117] border border-[#30363d] rounded-xl overflow-hidden shadow-2xl">
+        <div class="bg-[#161b22] px-4 py-2.5 border-b border-[#30363d] flex items-center justify-between text-xs text-gray-400 font-mono">
+          <span>bash / terminal</span>
+          <button onclick="navigator.clipboard.writeText(document.getElementById('deploy-commands').innerText); alert('Comandos copiados!');" class="text-blue-400 hover:underline">Copy commands</button>
+        </div>
+        <pre id="deploy-commands" class="p-5 font-mono text-xs text-gray-300 overflow-x-auto leading-relaxed">
+<span class="text-gray-500"># 1. Inicializa el repositorio local</span>
+git init
+git add .
+git commit -m "feat: launch 100% client-side github clone with kdd and webmcp"
+git branch -M main
+
+<span class="text-gray-500"># 2. Crea el repositorio remoto y sube el código con gh CLI</span>
+gh repo create webmcp-github --public --source=. --push \
+  --description "100% functional client-side GitHub clone deployable to GitHub Pages with Tailwind, HTMX, KDD, and FastWebMCP."
+
+<span class="text-gray-500"># 3. Habilita GitHub Pages apuntando a la rama main (root)</span>
+gh api -X POST "repos/MauricioPerera/webmcp-github/pages" \
+  -f "source[branch]=main" -f "source[path]=/"
+
+<span class="text-gray-500"># 4. Abre el repositorio en tu navegador</span>
+gh browse</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FINAL CTA ================= -->
+  <section class="py-20 text-center bg-gradient-to-t from-[#161b22] to-[#0d1117]">
+    <div class="max-w-4xl mx-auto px-4">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white">¿Listo para probar el Clon de GitHub?</h2>
+      <p class="text-gray-400 text-sm mt-3 max-w-xl mx-auto">
+        Explora repositorios, audita contratos CCDD con puertas deterministas, corre oráculos de prueba y mueve tarjetas en el KDD-Board.
+      </p>
+      <div class="mt-8 flex justify-center gap-4">
+        <a href="app.html" class="px-8 py-3.5 bg-[#238636] hover:bg-[#2ea043] text-white text-base font-bold rounded-lg shadow-xl hover:shadow-green-900/50 transition flex items-center gap-2">
+          <span>Lanzar Aplicación Web (app.html)</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-[#161b22] border-t border-[#30363d] py-8 text-xs text-gray-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2 text-gray-400">
+        <svg class="w-5 h-5 fill-current" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        <span>Creado por Mauricio Perera &middot; Metodología KDD &middot; Estándar WebMCP</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="https://github.com/MauricioPerera/KDD" target="_blank" class="hover:text-emerald-400">KDD Template</a>
+        <a href="https://mauricioperera.github.io/fastwebmcp/" target="_blank" class="hover:text-orange-400">fastwebmcp</a>
+        <a href="https://webmcp.com" target="_blank" class="hover:text-cyan-400">webmcp.com</a>
+        <a href="app.html" class="hover:text-white font-bold">Abrir App</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- WebMCP Inspector Modal (Embedded directly for quick test) -->
+  <div id="inspector-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-[#161b22] border border-cyan-800/70 rounded-lg shadow-2xl w-full max-w-3xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+        <h3 class="font-bold text-white text-sm flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          WebMCP Standard (10 Tools Registered)
+        </h3>
+        <button onclick="closeMcpInspector()" class="text-gray-400 hover:text-white text-lg font-bold px-2">&times;</button>
+      </div>
+      <div class="p-6 space-y-4 text-xs">
+        <p class="text-gray-300">
+          Este sitio implementa el estándar <a href="https://webmcp.com" class="text-cyan-400 underline">webmcp.com</a> exponiendo herramientas en <code class="text-cyan-300 font-mono">document.modelContext</code>.
+        </p>
+        <div class="bg-[#0d1117] p-3 rounded border border-[#30363d] font-mono text-[11px] text-emerald-400 max-h-60 overflow-y-auto">
+          <div>[WebMCP Tools Active]</div>
+          <div>&bull; list_repositories (read-only)</div>
+          <div>&bull; get_repository (read-only)</div>
+          <div>&bull; get_file (read-only)</div>
+          <div>&bull; create_or_update_file (mutating)</div>
+          <div>&bull; list_issues (read-only)</div>
+          <div>&bull; create_issue (mutating)</div>
+          <div>&bull; create_pull_request (mutating)</div>
+          <div>&bull; validate_kdd_contract (deterministic gate)</div>
+          <div>&bull; get_kdd_board (read-only)</div>
+          <div>&bull; update_kdd_task (mutating)</div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <a href="app.html" class="px-4 py-2 bg-[#238636] hover:bg-[#2ea043] text-white font-bold rounded">
+            Abrir Aplicación y Consola Completa &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openMcpInspector() {
+      document.getElementById('inspector-modal').classList.remove('hidden');
+    }
+    function closeMcpInspector() {
+      document.getElementById('inspector-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
